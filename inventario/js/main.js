@@ -25,9 +25,15 @@ let modalQty = 1;
 let modalProduct = null;
 let heroSlide = 0;
 let heroSlides;
+let catalogSignature = '';
 
 function fmt(n) {
     return '$' + n.toLocaleString('es-CO');
+}
+
+function escapeHTML(value) {
+    const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return String(value ?? '').replace(/[&<>"']/g, character => entities[character]);
 }
 
 async function saveCart() {
@@ -61,8 +67,8 @@ function buildProductCards(products) {
     return products.map(p => `
     <div class="product-card reveal" data-id="${p.id}">
       <div class="product-img-wrap">
-        <img src="${p.img}" alt="${p.name}" loading="lazy" onclick="openProductModal(${p.id})">
-        ${p.badge ? `<div class="product-badge ${p.badgeType}">${p.badge}</div>` : ''}
+        <img src="${p.img}" alt="${escapeHTML(p.name)}" loading="lazy" onclick="openProductModal(${p.id})">
+        ${p.badge ? `<div class="product-badge ${p.badgeType === 'sale' ? 'sale' : ''}">${escapeHTML(p.badge)}</div>` : ''}
         <div class="product-actions">
           <button class="product-action-btn fav-btn ${favorites.has(p.id) ? 'active-fav' : ''}" data-id="${p.id}" title="Favorito" onclick="toggleFav(${p.id},this)">
             <i class="bi ${favorites.has(p.id) ? 'bi-heart-fill' : 'bi-heart'}"></i>
@@ -73,8 +79,8 @@ function buildProductCards(products) {
         </div>
       </div>
       <div class="product-body">
-        <div class="product-brand">${p.brand}</div>
-        <div class="product-name">${p.name}</div>
+        <div class="product-brand">${escapeHTML(p.brand)}</div>
+        <div class="product-name">${escapeHTML(p.name)}</div>
         <div class="product-price-row">
           <span class="product-price">${fmt(p.price)}</span>
           ${p.old ? `<span class="product-old-price">${fmt(p.old)}</span>` : ''}
@@ -310,7 +316,7 @@ document.getElementById('searchInput').addEventListener('input', function () {
     <div class="search-result-item" onclick="openProductModal(${p.id});document.getElementById('searchOverlay').classList.remove('open')">
       <div class="search-result-thumb" style="background-image:url('${p.img}')"></div>
       <div>
-        <div class="search-result-name">${p.brand} — ${p.name}</div>
+        <div class="search-result-name">${escapeHTML(p.brand)} — ${escapeHTML(p.name)}</div>
         <div class="search-result-price">${fmt(p.price)}</div>
       </div>
     </div>
@@ -384,6 +390,7 @@ async function initStore() {
         ...product,
         img: product.img || images[index % images.length].url
     }));
+    catalogSignature = JSON.stringify(PRODUCTS.map(({ id, name, brand, price, old, badge, badgeType, cat }) => [id, name, brand, price, old, badge, badgeType, cat]));
     buildStrip();
     buildBrands();
     buildProducts('all');
@@ -395,4 +402,29 @@ async function initStore() {
     if (!apiAvailable) showToast('Mostrando el catálogo de demostración.');
 }
 
+async function refreshCatalog() {
+    if (document.visibilityState !== 'visible') return;
+    try {
+        const response = await fetch(`${API_BASE}/products`);
+        if (!response.ok) return;
+        const updatedProducts = await response.json();
+        const signature = JSON.stringify(updatedProducts.map(({ id, name, brand, price, old, badge, badgeType, cat }) => [id, name, brand, price, old, badge, badgeType, cat]));
+        if (signature === catalogSignature) return;
+
+        const previousImages = new Map(PRODUCTS.map(product => [product.id, product.img]));
+        PRODUCTS = updatedProducts.map((product, index) => ({
+            ...product,
+            img: product.img || previousImages.get(product.id) || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length].url
+        }));
+        catalogSignature = signature;
+        buildProducts(currentFilter);
+        buildOffers();
+        buildNiche();
+        showToast('El catálogo fue actualizado.');
+    } catch (error) {
+        // Se mantiene visible el último catálogo si la API se desconecta temporalmente.
+    }
+}
+
 initStore();
+setInterval(refreshCatalog, 3000);

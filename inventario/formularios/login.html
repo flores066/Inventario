@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Less Perfum — Iniciar sesión</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="login.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +17,7 @@
   <div class="split-visual">
     <div class="visual-overlay"></div>
     <img
-      src="https://images.unsplash.com/photo-1595777707802-52317d4fdb0c?w=1200&h=1600&fit=crop"
+      src="https://picsum.photos/seed/less-perfum-auth/1200/1600"
       alt="Fragancia" class="visual-img">
     <div class="visual-content">
       <a href="../index.html" class="brand-logo">Less <span>Perfum</span></a>
@@ -92,5 +93,62 @@
   </div>
 
   <script src="../js/login.js"></script>
+
+  <!--
+  <script>
+    // Toggle password visibility
+    document.getElementById('togglePass').addEventListener('click', function () {
+      const inp = document.getElementById('password');
+      const icon = document.getElementById('eyeIcon');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+      } else {
+        inp.type = 'password';
+        icon.className = 'bi bi-eye';
+      }
+    });
+
+    // Basic validation
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      let ok = true;
+      const email = document.getElementById('email');
+      const pass  = document.getElementById('password');
+      const emailErr = document.getElementById('emailErr');
+      const passErr  = document.getElementById('passErr');
+
+      emailErr.textContent = '';
+      passErr.textContent  = '';
+
+      if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+        emailErr.textContent = 'Ingresa un correo válido.';
+        email.closest('.input-wrap').classList.add('error');
+        ok = false;
+      } else {
+        email.closest('.input-wrap').classList.remove('error');
+      }
+
+      if (!pass.value || pass.value.length < 6) {
+        passErr.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+        pass.closest('.input-wrap').classList.add('error');
+        ok = false;
+      } else {
+        pass.closest('.input-wrap').classList.remove('error');
+      }
+
+      if (ok) {
+        const btn = document.getElementById('submitBtn');
+        btn.classList.add('loading');
+        btn.querySelector('.btn-text').textContent = 'Verificando…';
+        setTimeout(() => {
+          btn.classList.remove('loading');
+          btn.querySelector('.btn-text').textContent = 'Entrar';
+          // Aquí iría el redirect real
+        }, 1800);
+      }
+    });
+  </script>
+  -->
 </body>
 </html>

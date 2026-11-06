@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'No fue posible iniciar sesión.');
         alert('Inicio de sesión exitoso.');
-        window.location.href = '../index.html';
+        window.location.href = data.role === 'admin' ? '../admin.html' : '../index.html';
       }).catch(error => {
         passErr.textContent = error.message;
         pass.closest('.input-wrap').classList.add('error');

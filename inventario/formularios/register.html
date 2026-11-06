@@ -16,7 +16,7 @@
   <div class="split-visual">
     <div class="visual-overlay"></div>
     <img
-      src="https://images.unsplash.com/photo-1623293182086-7651a899d37f?w=1200&h=1600&fit=crop"
+      src="https://picsum.photos/seed/less-perfum-auth/1200/1600"
       alt="Fragancia de nicho" class="visual-img">
     <div class="visual-content">
       <a href="../index.html" class="brand-logo">Less <span>Perfum</span></a>
@@ -112,6 +112,7 @@
             <input type="checkbox" id="terms">
             <span class="checkmark"></span>
             Acepto los <a href="terms.html">Términos y condiciones</a> y la <a href="privacy.html">Política de privacidad</a>
+
           </label>
           <span class="field-error" id="termsErr"></span>
         </div>
@@ -146,5 +147,83 @@
   </div>
 
   <script src="../js/register.js"></script>
+<!--
+  <script>
+    // Toggle passwords
+    function makeToggle(btnId, inputId, iconId) {
+      document.getElementById(btnId).addEventListener('click', function () {
+        const inp  = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        inp.type  = inp.type === 'password' ? 'text' : 'password';
+        icon.className = inp.type === 'text' ? 'bi bi-eye-slash' : 'bi bi-eye';
+      });
+    }
+    makeToggle('togglePass',  'password',    'eyeIcon');
+    makeToggle('togglePass2', 'passConfirm', 'eyeIcon2');
+
+    // Password strength
+    document.getElementById('password').addEventListener('input', function () {
+      const val = this.value;
+      const fill  = document.getElementById('strengthFill');
+      const label = document.getElementById('strengthLabel');
+      const bar   = document.getElementById('strengthBar');
+
+      if (!val) { bar.style.opacity = '0'; return; }
+      bar.style.opacity = '1';
+
+      let score = 0;
+      if (val.length >= 8)              score++;
+      if (/[A-Z]/.test(val))            score++;
+      if (/[0-9]/.test(val))            score++;
+      if (/[^A-Za-z0-9]/.test(val))     score++;
+
+      const levels = [
+        { pct:'20%', color:'#c0574a', text:'Muy débil' },
+        { pct:'40%', color:'#d4884a', text:'Débil'     },
+        { pct:'65%', color:'#c8aa44', text:'Regular'   },
+        { pct:'100%',color:'#6baa6e', text:'Fuerte'    },
+      ];
+      const lv = levels[score - 1] || levels[0];
+      fill.style.width = lv.pct;
+      fill.style.background = lv.color;
+      label.textContent = lv.text;
+      label.style.color = lv.color;
+    });
+
+    // Validation
+    document.getElementById('registerForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      let ok = true;
+
+      const fields = {
+        firstName:  { el: document.getElementById('firstName'),   err: document.getElementById('firstNameErr'),  msg: 'Ingresa tu nombre.' },
+        lastName:   { el: document.getElementById('lastName'),    err: document.getElementById('lastNameErr'),   msg: 'Ingresa tu apellido.' },
+        email:      { el: document.getElementById('email'),       err: document.getElementById('emailErr'),      msg: 'Correo inválido.' },
+        password:   { el: document.getElementById('password'),    err: document.getElementById('passErr'),       msg: 'Mínimo 8 caracteres.' },
+        passConfirm:{ el: document.getElementById('passConfirm'), err: document.getElementById('confirmErr'),    msg: 'Las contraseñas no coinciden.' },
+      };
+
+      Object.entries(fields).forEach(([key, f]) => { f.err.textContent = ''; f.el.closest('.input-wrap').classList.remove('error'); });
+      document.getElementById('termsErr').textContent = '';
+
+      if (!fields.firstName.el.value.trim()) { fields.firstName.err.textContent = fields.firstName.msg; fields.firstName.el.closest('.input-wrap').classList.add('error'); ok = false; }
+      if (!fields.lastName.el.value.trim())  { fields.lastName.err.textContent  = fields.lastName.msg;  fields.lastName.el.closest('.input-wrap').classList.add('error');  ok = false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email.el.value)) { fields.email.err.textContent = fields.email.msg; fields.email.el.closest('.input-wrap').classList.add('error'); ok = false; }
+      if (fields.password.el.value.length < 8) { fields.password.err.textContent = fields.password.msg; fields.password.el.closest('.input-wrap').classList.add('error'); ok = false; }
+      if (fields.passConfirm.el.value !== fields.password.el.value) { fields.passConfirm.err.textContent = fields.passConfirm.msg; fields.passConfirm.el.closest('.input-wrap').classList.add('error'); ok = false; }
+      if (!document.getElementById('terms').checked) { document.getElementById('termsErr').textContent = 'Debes aceptar los términos.'; ok = false; }
+
+      if (ok) {
+        const btn = document.getElementById('submitBtn');
+        btn.classList.add('loading');
+        btn.querySelector('.btn-text').textContent = 'Creando cuenta…';
+        setTimeout(() => {
+          btn.classList.remove('loading');
+          btn.querySelector('.btn-text').textContent = 'Crear mi cuenta';
+        }, 2000);
+      }
+    });
+  </script>
+-->
 </body>
 </html>

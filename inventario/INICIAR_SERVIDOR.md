@@ -3,7 +3,7 @@
 ## Requisitos
 
 - Node.js instalado.
-- PostgreSQL instalado y ejecutándose.
+- Node.js instalado.
 - El proyecto ubicado en la carpeta `inventario`.
 
 ## 1. Abrir la carpeta correcta
@@ -20,9 +20,22 @@ También puedes abrir PowerShell y ejecutar:
 cd "c:\Users\SENA\Downloads\inventario-20260825T202423Z-1-001\inventario"
 ```
 
-## 2. Crear la base de datos PostgreSQL
+## 2. Probar sin credenciales (modo demostración)
 
-Asegúrate de que el servicio de PostgreSQL esté iniciado. Después ejecuta el archivo SQL con `psql`:
+No necesitas instalar PostgreSQL ni tener credenciales. `.env` ya está configurado con `DEMO_MODE=true`. Desde la carpeta del proyecto ejecuta:
+
+```powershell
+npm install
+npm start
+```
+
+Abre `http://localhost:3000/index.html`. Catálogo, registro, inicio de sesión, carrito y checkout funcionan con datos temporales que se borran al detener el servidor.
+
+Usa el mismo formulario `http://localhost:3000/formularios/login.html` para clientes y administrador. Para el panel demo, ingresa `admin@email.com` / `admin123`; el sistema te enviará a `admin.html` automáticamente. Si visitas el panel sin sesión, volverás a ese mismo login.
+
+## 3. PostgreSQL opcional (datos persistentes)
+
+Solo si quieres guardar los datos entre reinicios, inicia PostgreSQL y ejecuta el archivo SQL con `psql`:
 
 ```powershell
 psql -U postgres -f database/data.sql
@@ -38,7 +51,7 @@ Si `psql` no es reconocido, usa la ruta completa, normalmente similar a:
 
 Cambia `16` por la versión instalada en tu equipo.
 
-## 3. Crear la configuración `.env`
+## 4. Configurar `.env` para PostgreSQL
 
 Copia el archivo de ejemplo:
 
@@ -46,18 +59,21 @@ Copia el archivo de ejemplo:
 Copy-Item .env.example .env
 ```
 
-Abre `.env` y confirma estos valores. Cambia el usuario, contraseña o puerto si tu instalación usa otros:
+En `.env`, cambia `DEMO_MODE=true` a `DEMO_MODE=false` y configura la URL con tus propios datos de PostgreSQL:
 
 ```env
 PORT=3000
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/less_perfum
+DEMO_MODE=false
+DATABASE_URL=postgresql://usuario:contraseña@localhost:5432/less_perfum
 JWT_SECRET=una-clave-larga-y-segura-para-less-perfum
 NODE_ENV=development
+ADMIN_EMAIL=admin@tudominio.com
+ADMIN_PASSWORD=una-contraseña-larga-y-única
 ```
 
 No compartas el archivo `.env` ni la clave `JWT_SECRET`.
 
-## 4. Instalar dependencias
+## 5. Instalar dependencias
 
 Solo es necesario hacerlo la primera vez o después de modificar `package.json`:
 
@@ -65,7 +81,7 @@ Solo es necesario hacerlo la primera vez o después de modificar `package.json`:
 npm install
 ```
 
-## 5. Iniciar el servidor
+## 6. Iniciar el servidor
 
 Ejecuta:
 
@@ -81,7 +97,7 @@ Less Perfum disponible en http://localhost:3000
 
 Mantén esa terminal abierta mientras uses la página.
 
-## 6. Abrir la tienda
+## 7. Abrir la tienda
 
 Abre esta dirección en el navegador:
 
@@ -91,7 +107,7 @@ http://localhost:3000/index.html
 
 No abras `index.html` directamente con doble clic, porque las peticiones `fetch()` necesitan pasar por el servidor.
 
-## 7. Comprobar que todo funciona
+## 8. Comprobar que todo funciona
 
 En otra terminal, desde la carpeta `inventario`, ejecuta:
 
@@ -99,10 +115,10 @@ En otra terminal, desde la carpeta `inventario`, ejecuta:
 Invoke-WebRequest http://localhost:3000/api/health
 ```
 
-La respuesta esperada contiene:
+En modo demo, la respuesta esperada es:
 
 ```json
-{"ok":true}
+{"ok":true,"mode":"demo"}
 ```
 
 ## Problemas frecuentes
@@ -115,9 +131,9 @@ Cambia `PORT=3000` por otro puerto, por ejemplo `PORT=3001`, en `.env`. Luego ab
 http://localhost:3001/index.html
 ```
 
-### La API responde 503
+### La API no conecta con PostgreSQL
 
-PostgreSQL no está disponible o `DATABASE_URL` es incorrecta. Revisa que PostgreSQL esté ejecutándose, que la base `less_perfum` exista y que la contraseña de `.env` sea correcta.
+Si no tienes credenciales, vuelve a `DEMO_MODE=true` (o elimina `DATABASE_URL`) y reinicia el servidor. Para persistencia, revisa que PostgreSQL esté ejecutándose, que la base `less_perfum` exista y que la URL sea correcta.
 
 ### La página no carga productos
 

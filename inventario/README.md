@@ -1,24 +1,28 @@
 # Less Perfum
 
-Backend Express y PostgreSQL para la tienda frontend existente. Los archivos CSS no se modifican.
+Tienda Less Perfum con servidor Express. Funciona en modo demostración sin PostgreSQL ni credenciales; los datos demo viven en memoria y se reinician al apagar el servidor. PostgreSQL es opcional para guardar datos de forma permanente.
 
 ## Puesta en marcha
 
-1. Instala PostgreSQL y crea la base de datos ejecutando `database/data.sql` con `psql`.
-2. Copia `.env.example` como `.env` y ajusta `DATABASE_URL` y `JWT_SECRET`.
-3. Instala dependencias:
+1. Instala dependencias:
 
 ```bash
 npm install
 ```
 
-4. Inicia la aplicación:
+1. Inicia la aplicación:
 
 ```bash
 npm start
 ```
 
 Abre `http://localhost:3000/index.html`. La API queda disponible bajo `/api`.
+
+## Panel de administración demo
+
+Usa el mismo formulario de `formularios/login.html` para clientes y administradores. En modo demo, ingresa `admin@email.com` / `admin123` y el sistema abrirá el panel automáticamente en `admin.html`. Si visitas el panel sin sesión, vuelve al mismo login. Cambia `ADMIN_EMAIL` y `ADMIN_PASSWORD` antes de publicar el sitio.
+
+La configuración inicial usa `DEMO_MODE=true`; no hace falta crear `.env` si se usan los valores predeterminados. Para persistencia opcional, crea la base con `database/data.sql`, configura `DATABASE_URL` y usa `DEMO_MODE=false`.
 
 ## Endpoints
 
@@ -30,4 +34,4 @@ Abre `http://localhost:3000/index.html`. La API queda disponible bajo `/api`.
 - `POST /api/auth/login`
 - `POST /api/orders`
 
-El servidor calcula precios, IVA, envío y stock desde PostgreSQL. Nunca almacena los datos de tarjeta; el checkout solo envía el método de pago seleccionado.
+El servidor calcula precios, IVA, envío y stock tanto en modo demo como con PostgreSQL. Nunca almacena los datos de tarjeta; el checkout solo envía el método de pago seleccionado.
