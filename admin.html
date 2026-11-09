@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Administración | Less Perfum</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="login-card" id="loginView" aria-labelledby="loginTitle">
+      <a class="brand" href="index.html">Less <span>Perfum</span></a>
+      <p class="eyebrow">Zona segura</p>
+      <h1 id="loginTitle">Administración</h1>
+      <p class="intro">Debes iniciar sesión para administrar productos, inventario y pedidos.</p>
+      <p class="form-error" id="adminLoginError" role="alert"></p>
+      <a class="primary-button" href="formularios/login.html">Ir al inicio de sesión</a>
+      <a class="back-link" href="index.html">← Volver a la tienda</a>
+    </section>
+
+    <section class="dashboard" id="dashboardView" hidden aria-labelledby="dashboardTitle">
+      <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Cerrar menú"></button>
+      <aside class="sidebar" id="adminSidebar" aria-label="Navegación de administración">
+        <a class="brand" href="index.html"><span class="brand-mark">L</span><span class="brand-name">Less <em>Perfum</em></span></a>
+        <p class="sidebar-label">MENÚ PRINCIPAL</p>
+        <nav class="side-nav" aria-label="Secciones del panel">
+          <a class="nav-link active" href="#overview" data-section="overview">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span>Resumen</span>
+          </a>
+          <a class="nav-link" href="#inventory" data-section="inventory">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/></svg>
+            <span>Inventario</span><span class="nav-count" id="navProductCount">0</span>
+          </a>
+          <a class="nav-link" href="#customers" data-section="customers">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Clientes</span><span class="nav-count" id="navCustomerCount">0</span>
+          </a>
+          <a class="nav-link" href="#orders" data-section="orders">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l2 4H4l2-4Z"/><path d="M4 7v13h16V7M9 11h6"/></svg>
+            <span>Pedidos</span><span class="nav-count" id="navOrderCount">0</span>
+          </a>
+        </nav>
+        <div class="sidebar-bottom">
+          <a class="store-link" href="index.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18l-1.5-6h-15L3 10Z"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg>
+            <span>Ver tienda</span>
+          </a>
+          <div class="admin-profile">
+            <div class="profile-avatar" aria-hidden="true">A</div>
+            <div class="profile-copy"><strong>Administrador</strong><span id="adminProfileEmail">Sesión protegida</span></div>
+            <button class="profile-logout" id="logoutButton" type="button" aria-label="Cerrar sesión" title="Cerrar sesión">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="dashboard-main">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menú" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <div><p class="breadcrumb">Less Perfum <span>/</span> <strong id="currentSectionLabel">Resumen</strong></p><p class="topbar-date" id="adminWelcome"></p></div>
+          </div>
+          <div class="header-actions">
+            <span class="live-status"><i></i> Tienda conectada</span>
+            <button class="secondary-button" id="refreshButton" type="button" title="Actualizar datos">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2"/></svg>
+              <span>Actualizar</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="dashboard-content">
+          <section class="overview-section" id="overview" aria-labelledby="dashboardTitle">
+            <div class="welcome-banner">
+              <div><p class="eyebrow">PANEL DE CONTROL</p><h1 id="dashboardTitle">Resumen de tu tienda</h1><p>Una vista clara de lo que sucede hoy en Less Perfum.</p></div>
+              <a href="#inventory" class="banner-action">Gestionar catálogo <span aria-hidden="true">→</span></a>
+              <div class="banner-decoration" aria-hidden="true">LP</div>
+            </div>
+            <p class="dashboard-error" id="dashboardError" role="alert" aria-live="polite"></p>
+            <div class="section-title-row"><div><h2>Indicadores generales</h2><p>Actualizados automáticamente desde tu base de datos.</p></div><span class="updated-label" id="lastUpdated">Sincronizando…</span></div>
+            <div class="stat-grid" aria-label="Indicadores de la tienda">
+              <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-products">P</span><span class="stat-caption">CATÁLOGO</span></div><span class="stat-label">Productos activos</span><strong id="productCount">0</strong><a href="#inventory">Ver inventario <span>→</span></a></article>
+              <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-stock">!</span><span class="stat-caption">ATENCIÓN</span></div><span class="stat-label">Stock bajo <small>(≤ 5 unidades)</small></span><strong id="lowStockCount">0</strong><a href="#inventory">Revisar stock <span>→</span></a></article>
+              <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-customers">C</span><span class="stat-caption">COMUNIDAD</span></div><span class="stat-label">Clientes registrados</span><strong id="customerCount">0</strong><a href="#customers">Ver clientes <span>→</span></a></article>
+              <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-orders">P</span><span class="stat-caption">OPERACIÓN</span></div><span class="stat-label">Pedidos recibidos</span><strong id="orderCount">0</strong><a href="#orders">Gestionar pedidos <span>→</span></a></article>
+              <article class="stat-card sales-card"><div class="stat-top"><span class="stat-icon icon-sales">$</span><span class="stat-caption">INGRESOS CONFIRMADOS</span></div><span class="stat-label">Ventas pagadas</span><strong id="salesTotal">$0</strong><p>Acumulado de pagos aprobados</p></article>
+            </div>
+            <div class="overview-shortcuts">
+              <a href="#inventory"><span class="shortcut-icon">＋</span><span><strong>Actualizar catálogo</strong><small>Precios, productos e inventario</small></span><b>→</b></a>
+              <a href="#orders"><span class="shortcut-icon">↗</span><span><strong>Revisar pedidos</strong><small>Estados, pagos y entregas</small></span><b>→</b></a>
+              <a href="#customers"><span class="shortcut-icon">◎</span><span><strong>Atender clientes</strong><small>Consulta y estado de cuentas</small></span><b>→</b></a>
+            </div>
+          </section>
+
+          <section class="data-card" id="inventory" aria-labelledby="inventoryTitle">
+            <div class="section-heading"><div><p class="eyebrow">CATÁLOGO</p><h2 id="inventoryTitle">Inventario</h2><p>Administra productos, precios, disponibilidad e imágenes de la tienda.</p></div></div>
+            <form class="product-form" id="productForm">
+              <label>Producto<input name="name" maxlength="120" placeholder="Nombre" required></label>
+              <label>Marca<input name="brand" maxlength="120" placeholder="Marca" required></label>
+              <label>Categoría<select name="category" required><option value="mujer">Mujer</option><option value="hombre">Hombre</option><option value="nicho">Nicho</option><option value="arabe">Árabe</option><option value="oferta">Oferta</option></select></label>
+              <label>Precio (COP)<input name="price" type="number" min="0" step="1" placeholder="Precio" required></label>
+              <label>Stock inicial<input name="stock" type="number" min="0" step="1" value="0" required></label>
+              <label class="wide-field">Imagen HTTPS<input name="img" type="url" placeholder="https://…"></label>
+              <label>Insignia<input name="badge" maxlength="40" placeholder="Nuevo (opcional)"></label>
+              <label>Tipo de insignia<select name="badgeType"><option value="">Normal</option><option value="sale">Oferta</option></select></label>
+              <button class="primary-button" type="submit"><span aria-hidden="true">＋</span> Agregar producto</button>
+            </form>
+            <p class="table-feedback" id="productFeedback" role="status" aria-live="polite"></p>
+            <div class="table-toolbar"><strong>Productos en catálogo</strong><label class="search-box"><span aria-hidden="true">⌕</span><input id="productSearch" type="search" placeholder="Buscar producto o marca" aria-label="Buscar producto o marca"></label></div>
+            <div class="table-scroll">
+              <table><thead><tr><th>Producto</th><th>Marca</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Imagen</th><th>Insignia</th><th>Tipo</th><th>Visible</th><th>Acción</th></tr></thead><tbody id="productRows"></tbody></table>
+            </div>
+          </section>
+
+          <section class="data-card" id="customers" aria-labelledby="customersTitle">
+            <div class="section-heading"><div><p class="eyebrow">RELACIÓN CON CLIENTES</p><h2 id="customersTitle">Clientes registrados</h2><p>Consulta los datos de contacto y administra el acceso de cada cliente.</p></div></div>
+            <div class="table-toolbar"><strong>Directorio de clientes</strong><label class="search-box"><span aria-hidden="true">⌕</span><input id="customerSearch" type="search" placeholder="Buscar nombre o correo" aria-label="Buscar cliente por nombre o correo"></label></div>
+            <div class="table-scroll">
+              <table><thead><tr><th>Cliente</th><th>Correo</th><th>Teléfono</th><th>Ciudad</th><th>Dirección</th><th>Registro</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="customerRows"></tbody></table>
+            </div>
+          </section>
+
+          <section class="data-card" id="orders" aria-labelledby="ordersTitle">
+            <div class="section-heading"><div><p class="eyebrow">ACTIVIDAD DE LA TIENDA</p><h2 id="ordersTitle">Pedidos y pagos</h2><p>Da seguimiento a las compras, confirma pagos y actualiza las entregas.</p></div></div>
+            <div class="table-toolbar"><strong>Historial de pedidos</strong><label class="search-box"><span aria-hidden="true">⌕</span><input id="orderSearch" type="search" placeholder="Buscar pedido o cliente" aria-label="Buscar pedido o cliente"></label></div>
+            <div class="table-scroll">
+              <table><thead><tr><th>N.º</th><th>Cliente</th><th>Correo</th><th>Teléfono</th><th>Entrega</th><th>Artículos</th><th>Total</th><th>Pago</th><th>Pedido</th><th>Fecha</th><th>Acción</th></tr></thead><tbody id="orderRows"></tbody></table>
+            </div>
+          </section>
+          <footer class="dashboard-footer"><span id="modeNote"></span><a href="index.html">Abrir tienda pública ↗</a></footer>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="js/admin.js"></script>
+</body>
+</html>

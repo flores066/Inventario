@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Less Perfum — Fragancias Premium</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- ANNOUNCEMENT BAR -->
+    <div class="ann-bar">
+        Envío gratis en compras mayores a $150,000 
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="site-nav" id="siteNav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">Less <span>Perfum</span></a>
+
+            <ul class="nav-links">
+                <li><a href="#inicio">Inicio</a></li>
+                <li><a href="#categorias">Categorías</a></li>
+                <li><a href="#destacados">Destacados</a></li>
+                <li><a href="#ofertas">Ofertas</a></li>
+                <li><a href="#nicho">Nicho</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <button class="nav-icon-btn" id="openSearch" title="Buscar">
+                    <i class="bi bi-search"></i>
+                </button>
+                <a class="nav-icon-btn" id="accountLink" href="formularios/login.html" title="Iniciar sesión">
+                    <i class="bi bi-person"></i>
+                </a>
+                <button class="nav-icon-btn" id="openFav" title="Favoritos">
+                    <i class="bi bi-heart"></i>
+                </button>
+                <button class="nav-icon-btn" id="openCart" title="Carrito">
+                    <i class="bi bi-bag"></i>
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </button>
+                <button class="nav-icon-btn nav-hamburger" id="openMobile" title="Menú">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- SEARCH OVERLAY -->
+    <div class="search-overlay" id="searchOverlay">
+        <button class="search-close" id="closeSearch"><i class="bi bi-x"></i></button>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Buscar fragancia..." autocomplete="off">
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- MOBILE MENU -->
+    <div class="mobile-menu" id="mobileMenu">
+        <button class="mobile-close" id="closeMobile"><i class="bi bi-x-lg"></i></button>
+        <div class="mobile-menu-links">
+            <a href="#inicio" onclick="closeMobileMenu()">Inicio</a>
+            <a href="#categorias" onclick="closeMobileMenu()">Categorías</a>
+            <a href="#destacados" onclick="closeMobileMenu()">Destacados</a>
+            <a href="#ofertas" onclick="closeMobileMenu()">Ofertas</a>
+            <a href="#nicho" onclick="closeMobileMenu()">Nicho</a>
+            <a href="#contacto" onclick="closeMobileMenu()">Contacto</a>
+        </div>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero" id="inicio">
+        <div class="hero-slide active"
+            style="background-image:url('https://images.unsplash.com/photo-1594035910387-fea47794261f?w=1600&h=900&fit=crop')">
+        </div>
+        <div class="hero-slide"
+            style="background-image:url('https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=1600&h=900&fit=crop')">
+        </div>
+        <div class="hero-slide"
+            style="background-image:url('https://images.unsplash.com/photo-1541643600914-78b084683601?w=1600&h=900&fit=crop')">
+        </div>
+
+        <div class="hero-content">
+            <div class="hero-text">
+                <span class="hero-label">Colección 2026</span>
+                <h1 class="hero-title">El arte de<br>la fragancia</h1>
+                <p class="hero-sub">Perfumes árabes, de nicho y diseñador.<br>Seleccionados para quien exige lo mejor.
+                </p>
+                <button class="hero-cta"
+                    onclick="document.getElementById('destacados').scrollIntoView({behavior:'smooth'})">
+                    Explorar colección <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="hero-dots" id="heroDots">
+            <div class="hero-dot active" onclick="goSlide(0)"></div>
+            <div class="hero-dot" onclick="goSlide(1)"></div>
+            <div class="hero-dot" onclick="goSlide(2)"></div>
+        </div>
+        <div class="hero-scroll">Scroll</div>
+    </section>
+
+    <!-- MARQUEE STRIP -->
+    <div class="strip">
+        <div class="strip-inner" id="stripInner"></div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <section class="py-5" id="categorias" style="padding: 6rem 0 !important;">
+        <div style="max-width:1400px;margin:0 auto;padding:0 2rem;">
+            <div class="sec-header reveal">
+                <span class="sec-label">Explorar</span>
+                <h2 class="sec-title">Nuestras categorías</h2>
+                <div class="sec-line">
+                    <div class="sec-line-dot"></div>
+                </div>
+            </div>
+            <div class="cat-grid reveal">
+                <div class="cat-card" style="min-height:400px;">
+                    <img src="https://images.unsplash.com/photo-1592078615290-033ee584e267?w=700&h=800&fit=crop"
+                        alt="Árabes" loading="lazy">
+                    <div class="cat-overlay">
+                        <div>
+                            <div class="cat-name">Perfumes Árabes</div>
+                            <div class="cat-count">32 fragancias</div>
+                        </div>
+                        <div class="cat-arrow"><i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+                <div class="cat-card" style="min-height:195px;">
+                    <img src="https://images.unsplash.com/photo-1594035910387-fea47794261f?w=700&h=400&fit=crop"
+                        alt="Diseñador" loading="lazy">
+                    <div class="cat-overlay">
+                        <div>
+                            <div class="cat-name">Diseñador</div>
+                            <div class="cat-count">56 fragancias</div>
+                        </div>
+                        <div class="cat-arrow"><i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+                <div class="cat-card" style="min-height:195px;">
+                    <img src="https://images.unsplash.com/photo-1541643600914-78b084683601?w=700&h=400&fit=crop"
+                        alt="Nicho" loading="lazy">
+                    <div class="cat-overlay">
+                        <div>
+                            <div class="cat-name">Nicho</div>
+                            <div class="cat-count">18 fragancias</div>
+                        </div>
+                        <div class="cat-arrow"><i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BRANDS -->
+    <section class="brands-sec">
+        <div class="brand-scroll">
+            <div class="brand-track" id="brandTrack"></div>
+            <div class="brand-track" id="brandTrack2" aria-hidden="true"></div>
+        </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section style="padding: 6rem 0;" id="destacados">
+        <div style="max-width:1400px;margin:0 auto;padding:0 2rem;">
+            <div class="sec-header reveal">
+                <span class="sec-label">Selección</span>
+                <h2 class="sec-title">Destacados</h2>
+                <div class="sec-line">
+                    <div class="sec-line-dot"></div>
+                </div>
+            </div>
+
+            <div class="filter-tabs reveal" id="filterTabs">
+                <button class="filter-tab active" data-filter="all">Todos</button>
+                <button class="filter-tab" data-filter="hombre">Hombre</button>
+                <button class="filter-tab" data-filter="mujer">Mujer</button>
+                <button class="filter-tab" data-filter="arabe">Árabe</button>
+                <button class="filter-tab" data-filter="nicho">Nicho</button>
+                <button class="filter-tab" data-filter="oferta">Ofertas</button>
+            </div>
+
+            <div class="products-grid" id="productsGrid"></div>
+        </div>
+    </section>
+
+    <!-- PROMISE -->
+    <section class="promise-sec">
+        <div style="max-width:1400px;margin:0 auto;padding:0 2rem;">
+            <div class="promise-grid">
+                <div class="promise-item reveal">
+                    <div class="promise-icon"><i class="bi bi-shield-check"></i></div>
+                    <div class="promise-title">100% Auténtico</div>
+                    <p class="promise-text">Todos nuestros productos son originales y certificados directamente de las
+                        marcas.</p>
+                </div>
+                <div class="promise-item reveal">
+                    <div class="promise-icon"><i class="bi bi-truck"></i></div>
+                    <div class="promise-title">Envío Express</div>
+                    <p class="promise-text">Entrega en 24-48h en todo el país. Empaque de lujo incluido en cada pedido.
+                    </p>
+                </div>
+                <div class="promise-item reveal">
+                    <div class="promise-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="promise-title">Cambios Gratis</div>
+                    <p class="promise-text">30 días para cambiar tu fragancia si no es lo que esperabas, sin preguntas.
+                    </p>
+                </div>
+                <div class="promise-item reveal">
+                    <div class="promise-icon"><i class="bi bi-chat-heart"></i></div>
+                    <div class="promise-title">Asesoría Personal</div>
+                    <p class="promise-text">Nuestros expertos te ayudan a encontrar la fragancia perfecta para ti.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="site-footer" id="contacto">
+        <div style="max-width:1400px;margin:0 auto;padding:0 2rem;">
+            <div class="footer-grid">
+                <div>
+                    <div class="footer-brand">Less <span>Perfum</span></div>
+                    <p class="footer-desc">Tu destino premium para fragancias árabes, de nicho y diseñador. Curada para
+                        quienes exigen lo mejor en cada aroma.</p>
+                    <div class="footer-socials">
+                        <a href="#" class="social-btn"><i class="bi bi-instagram"></i></a>
+                        <a href="#" class="social-btn"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="social-btn"><i class="bi bi-twitter-x"></i></a>
+                        <a href="#" class="social-btn"><i class="bi bi-tiktok"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <div class="footer-heading">Categorías</div>
+                    <ul class="footer-links">
+                        <li><a href="#">Perfumes Árabes</a></li>
+                        <li><a href="#">Diseñador</a></li>
+                        <li><a href="#">Nicho</a></li>
+                        <li><a href="#">Cítricos</a></li>
+                        <li><a href="#">Florales</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="footer-heading">Ayuda</div>
+                    <ul class="footer-links">
+                        <li><a href="#">Guía de fragancias</a></li>
+                        <li><a href="#">Rastrear pedido</a></li>
+                        <li><a href="#">Política de cambios</a></li>
+                        <li><a href="#">Preguntas frecuentes</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="footer-heading">Contacto</div>
+                    <ul class="footer-links">
+                        <li><a href="#">info@lessperfum.com</a></li>
+                        <li><a href="#">+57 (300) 123-4567</a></li>
+                        <li><a href="admin.html">Panel de administración</a></li>
+                        <li><a href="#" style="margin-top:0.5rem;display:inline-block;">Lun–Sáb: 10am–8pm</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 Less Perfum. Todos los derechos reservados.</span>
+                <span>Diseño Premium · Hecho con cuidado</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- WHATSAPP -->
+    <a href="https://wa.me/573001234567" class="wa-btn" target="_blank" title="WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+
+    <!-- MINI CART -->
+    <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+    <div class="cart-panel" id="cartPanel">
+        <div class="cart-header">
+            <h3>Mi Carrito</h3>
+            <button class="cart-close-btn" onclick="closeCart()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <div class="cart-empty" id="cartEmpty">
+                <i class="bi bi-bag"></i>
+                <p>Tu carrito está vacío</p>
+            </div>
+        </div>
+        <div class="cart-footer" id="cartFooter" style="display:none;">
+            <div class="cart-subtotal">
+                <span>Subtotal</span>
+                <span id="cartTotal">$0</span>
+            </div>
+            <button class="cart-checkout-btn" id="cartCheckoutBtn">Finalizar Compra</button>
+            <button class="cart-continue-btn" onclick="closeCart()">Continuar Comprando</button>
+        </div>
+    </div>
+
+    <!-- PRODUCT MODAL -->
+    <div class="product-modal-backdrop" id="productModalBackdrop" onclick="closeProductModal(event)">
+        <div class="product-modal" id="productModal">
+            <div class="modal-img-side" style="position:relative;">
+                <button class="modal-close" onclick="closeProductModal(null,true)"><i class="bi bi-x"></i></button>
+                <img id="modalImg" src="" alt="">
+            </div>
+            <div class="modal-info-side">
+                <div class="modal-brand" id="modalBrand"></div>
+                <h2 class="modal-name" id="modalName"></h2>
+                <div class="modal-price" id="modalPrice"></div>
+                <div class="modal-divider"></div>
+                <div class="modal-notes-title">Pirámide de notas</div>
+                <div class="notes-row">
+                    <span class="note-pill">Bergamota</span>
+                    <span class="note-pill">Limón</span>
+                    <span class="note-pill">Jazmín</span>
+                    <span class="note-pill">Rosa</span>
+                    <span class="note-pill">Vainilla</span>
+                    <span class="note-pill">Ámbar</span>
+                </div>
+                <div class="modal-divider"></div>
+                <div class="modal-notes-title" style="margin-bottom:0.8rem;">Características</div>
+                <div class="modal-tags">
+                    <span class="modal-tag">100ml</span>
+                    <span class="modal-tag">EDP</span>
+                    <span class="modal-tag" id="modalGenreTag">Unisex</span>
+                </div>
+                <div class="modal-divider"></div>
+                <div class="modal-notes-title" style="margin-bottom:0.6rem;">Cantidad</div>
+                <div class="qty-selector">
+                    <button class="qty-btn" onclick="changeModalQty(-1)"><i class="bi bi-dash"></i></button>
+                    <div class="qty-val" id="modalQty">1</div>
+                    <button class="qty-btn" onclick="changeModalQty(1)"><i class="bi bi-plus"></i></button>
+                </div>
+                <button class="modal-add-btn" id="modalAddBtn">Agregar al carrito</button>
+                <button class="modal-wish-btn" id="modalWishBtn"><i class="bi bi-heart" style="margin-right:8px;"></i>Agregar a
+                    favoritos</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!--
+    <script>
+        const PRODUCTS = [
+            { id: 1, name: 'Essence de Amor', brand: 'Dior', price: 289900, old: 414900, badge: '−30%', badgeType: 'sale', cat: 'mujer', img: 'https://images.unsplash.com/photo-1595777707802-52317d4fdb0c?w=600&h=800&fit=crop', genre: 'Mujer' },
+            { id: 2, name: 'Royal Oud', brand: 'Maison Oud', price: 425000, badge: 'Árabe', badgeType: '', cat: 'arabe', img: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600&h=800&fit=crop', genre: 'Unisex' },
+            { id: 3, name: 'Floral Garden', brand: 'Carolina Herrera', price: 329000, badge: 'Nuevo', badgeType: '', cat: 'mujer', img: 'https://images.unsplash.com/photo-1623293182086-7651a899d37f?w=600&h=800&fit=crop', genre: 'Mujer' },
+            { id: 4, name: 'Midnight Noir', brand: 'Montblanc', price: 375000, old: 500000, badge: '−25%', badgeType: 'sale', cat: 'hombre', img: 'https://images.unsplash.com/photo-1586394974325-be4f4e19e9e8?w=600&h=800&fit=crop', genre: 'Hombre' },
+            { id: 5, name: 'Citrus Dreams', brand: 'Calvin Klein', price: 259000, old: 305000, badge: '−15%', badgeType: 'sale', cat: 'oferta', img: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&h=800&fit=crop', genre: 'Unisex' },
+            { id: 6, name: 'Vintage Elegance', brand: 'Gucci', price: 345000, badge: 'Hot', badgeType: '', cat: 'mujer', img: 'https://images.unsplash.com/photo-1595777707802-52317d4fdb0c?w=600&h=800&fit=crop', genre: 'Mujer' },
+            { id: 7, name: 'Luxe Noir', brand: 'Niche House', price: 465000, badge: 'Nicho', badgeType: '', cat: 'nicho', img: 'https://images.unsplash.com/photo-1623293182086-7651a899d37f?w=600&h=800&fit=crop', genre: 'Unisex' },
+            { id: 8, name: 'Ocean Breeze', brand: 'Rabanne', price: 315000, old: 420000, badge: '−25%', badgeType: 'sale', cat: 'oferta', img: 'https://images.unsplash.com/photo-1586394974325-be4f4e19e9e8?w=600&h=800&fit=crop', genre: 'Hombre' },
+        ];
+
+        const BRANDS = ['Calvin Klein', 'Dior', 'Montblanc', 'Rabanne', 'Gucci', 'Carolina Herrera', 'Chanel', 'Giorgio Armani', 'Yves Saint Laurent', 'Tom Ford'];
+        const STRIP_ITEMS = ['Envío Express', 'Originales 100%', 'Asesoría Gratis', 'Más de 200 Fragancias', 'Cambios sin costo'];
+
+        let cart = [];
+        let favorites = new Set();
+        let currentFilter = 'all';
+        let modalQty = 1;
+        let modalProduct = null;
+        let heroSlide = 0;
+        let heroSlides;
+
+        function fmt(n) { return '$' + n.toLocaleString('es-CO'); }
+
+        /* ── STRIP ── */
+        function buildStrip() {
+            const inner = document.getElementById('stripInner');
+            let html = '';
+            for (let i = 0; i < 3; i++) STRIP_ITEMS.forEach(t => {
+                html += `<div class="strip-item"><span>◆</span>${t}</div>`;
+            });
+            inner.innerHTML = html + html;
+        }
+
+        /* ── BRANDS ── */
+        function buildBrands() {
+            const html = BRANDS.map(b => `<div class="brand-item">${b}</div>`).join('');
+            document.getElementById('brandTrack').innerHTML = html;
+            document.getElementById('brandTrack2').innerHTML = html;
+        }
+
+        /* ── PRODUCTS ── */
+        function buildProducts(filter) {
+            const grid = document.getElementById('productsGrid');
+            const filtered = filter === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.cat === filter);
+            grid.innerHTML = filtered.map(p => `
+    <div class="product-card reveal" data-id="${p.id}">
+      <div class="product-img-wrap">
+        <img src="${p.img}" alt="${p.name}" loading="lazy" onclick="openProductModal(${p.id})">
+        ${p.badge ? `<div class="product-badge ${p.badgeType}">${p.badge}</div>` : ''}
+        <div class="product-actions">
+          <button class="product-action-btn fav-btn ${favorites.has(p.id) ? 'active-fav' : ''}" data-id="${p.id}" title="Favorito" onclick="toggleFav(${p.id},this)">
+            <i class="bi ${favorites.has(p.id) ? 'bi-heart-fill' : 'bi-heart'}"></i>
+          </button>
+          <button class="product-action-btn" title="Vista rápida" onclick="openProductModal(${p.id})">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+      </div>
+      <div class="product-body">
+        <div class="product-brand">${p.brand}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-price-row">
+          <span class="product-price">${fmt(p.price)}</span>
+          ${p.old ? `<span class="product-old-price">${fmt(p.old)}</span>` : ''}
+        </div>
+        <button class="product-add-btn" onclick="addToCart(${p.id})">Agregar al carrito</button>
+      </div>
+    </div>
+  `).join('');
+            observeReveal();
+        }
+
+        /* ── FILTER ── */
+        document.getElementById('filterTabs').addEventListener('click', e => {
+            const btn = e.target.closest('.filter-tab');
+            if (!btn) return;
+            document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            buildProducts(currentFilter);
+        });
+
+        /* ── CART ── */
+        function addToCart(id, qty = 1) {
+            const p = PRODUCTS.find(x => x.id === id);
+            const ex = cart.find(x => x.id === id);
+            if (ex) ex.qty += qty;
+            else cart.push({ ...p, qty });
+            renderCart();
+            showToast(`<i class="bi bi-check-circle"></i> ${p.name} agregado`);
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(x => x.id !== id);
+            renderCart();
+        }
+
+        function changeQty(id, delta) {
+            const item = cart.find(x => x.id === id);
+            if (!item) return;
+            item.qty = Math.max(1, item.qty + delta);
+            renderCart();
+        }
+
+        function renderCart() {
+            const badge = document.getElementById('cartBadge');
+            const items = document.getElementById('cartItems');
+            const empty = document.getElementById('cartEmpty');
+            const footer = document.getElementById('cartFooter');
+            const total = document.getElementById('cartTotal');
+
+            const count = cart.reduce((s, i) => s + i.qty, 0);
+            badge.textContent = count;
+
+            if (cart.length === 0) {
+                empty.style.display = 'flex';
+                footer.style.display = 'none';
+                items.querySelectorAll('.cart-item').forEach(el => el.remove());
+                return;
+            }
+            empty.style.display = 'none';
+            footer.style.display = 'block';
+
+            const existing = items.querySelectorAll('.cart-item');
+            existing.forEach(el => el.remove());
+
+            cart.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.dataset.id = item.id;
+                div.innerHTML = `
+      <div class="cart-item-img" style="background-image:url('${item.img}')"></div>
+      <div class="cart-item-info">
+        <div class="cart-item-brand">${item.brand}</div>
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-controls">
+          <button class="qty-btn" onclick="changeQty(${item.id},-1)"><i class="bi bi-dash"></i></button>
+          <div class="qty-val">${item.qty}</div>
+          <button class="qty-btn" onclick="changeQty(${item.id},1)"><i class="bi bi-plus"></i></button>
+        </div>
+        <div class="cart-item-price">${fmt(item.price * item.qty)}</div>
+      </div>
+      <button class="cart-item-remove" onclick="removeFromCart(${item.id})"><i class="bi bi-x"></i></button>
+    `;
+                items.insertBefore(div, empty);
+            });
+
+            const t = cart.reduce((s, i) => s + i.price * i.qty, 0);
+            total.textContent = fmt(t);
+        }
+
+        function openCart() {
+            document.getElementById('cartPanel').classList.add('open');
+            document.getElementById('cartOverlay').classList.add('open');
+        }
+        function closeCart() {
+            document.getElementById('cartPanel').classList.remove('open');
+            document.getElementById('cartOverlay').classList.remove('open');
+        }
+        document.getElementById('openCart').addEventListener('click', openCart);
+
+        /* ── FAVORITES ── */
+        function toggleFav(id, btn) {
+            if (favorites.has(id)) {
+                favorites.delete(id);
+                btn.classList.remove('active-fav');
+                btn.innerHTML = '<i class="bi bi-heart"></i>';
+                showToast('Eliminado de favoritos');
+            } else {
+                favorites.add(id);
+                btn.classList.add('active-fav');
+                btn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+                showToast(`<i class="bi bi-heart-fill" style="color:#e55;"></i> Agregado a favoritos`);
+            }
+        }
+
+        /* ── PRODUCT MODAL ── */
+        function openProductModal(id) {
+            const p = PRODUCTS.find(x => x.id === id);
+            modalProduct = p;
+            modalQty = 1;
+            document.getElementById('modalImg').src = p.img;
+            document.getElementById('modalBrand').textContent = p.brand;
+            document.getElementById('modalName').textContent = p.name;
+            document.getElementById('modalPrice').textContent = fmt(p.price);
+            document.getElementById('modalGenreTag').textContent = p.genre;
+            document.getElementById('modalQty').textContent = 1;
+            document.getElementById('modalAddBtn').onclick = () => { addToCart(p.id, modalQty); closeProductModal(null, true); openCart(); };
+            document.getElementById('productModalBackdrop').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProductModal(e, force) {
+            if (force || e && e.target === document.getElementById('productModalBackdrop')) {
+                document.getElementById('productModalBackdrop').classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function changeModalQty(delta) {
+            modalQty = Math.max(1, modalQty + delta);
+            document.getElementById('modalQty').textContent = modalQty;
+        }
+
+        /* ── HERO ── */
+        function initHero() {
+            heroSlides = document.querySelectorAll('.hero-slide');
+            const dots = document.querySelectorAll('.hero-dot');
+            document.querySelector('.hero').classList.add('loaded');
+            setInterval(() => {
+                heroSlides[heroSlide].classList.remove('active');
+                dots[heroSlide].classList.remove('active');
+                heroSlide = (heroSlide + 1) % heroSlides.length;
+                heroSlides[heroSlide].classList.add('active');
+                dots[heroSlide].classList.add('active');
+            }, 5500);
+        }
+
+        window.goSlide = function (i) {
+            const dots = document.querySelectorAll('.hero-dot');
+            heroSlides[heroSlide].classList.remove('active');
+            dots[heroSlide].classList.remove('active');
+            heroSlide = i;
+            heroSlides[heroSlide].classList.add('active');
+            dots[heroSlide].classList.add('active');
+        };
+
+        /* ── SEARCH ── */
+        document.getElementById('openSearch').addEventListener('click', () => {
+            document.getElementById('searchOverlay').classList.add('open');
+            setTimeout(() => document.getElementById('searchInput').focus(), 300);
+        });
+        document.getElementById('closeSearch').addEventListener('click', () => {
+            document.getElementById('searchOverlay').classList.remove('open');
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').classList.remove('show');
+        });
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const q = this.value.toLowerCase().trim();
+            const res = document.getElementById('searchResults');
+            if (!q) { res.classList.remove('show'); return; }
+            const hits = PRODUCTS.filter(p => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
+            if (!hits.length) { res.innerHTML = '<p style="color:rgba(255,255,255,0.4);font-size:0.9rem;">Sin resultados</p>'; res.classList.add('show'); return; }
+            res.innerHTML = hits.map(p => `
+    <div class="search-result-item" onclick="openProductModal(${p.id});document.getElementById('searchOverlay').classList.remove('open')">
+      <div class="search-result-thumb" style="background-image:url('${p.img}')"></div>
+      <div>
+        <div class="search-result-name">${p.brand} — ${p.name}</div>
+        <div class="search-result-price">${fmt(p.price)}</div>
+      </div>
+    </div>
+  `).join('');
+            res.classList.add('show');
+        });
+
+        /* ── MOBILE MENU ── */
+        document.getElementById('openMobile').addEventListener('click', () => document.getElementById('mobileMenu').classList.add('open'));
+        document.getElementById('closeMobile').addEventListener('click', closeMobileMenu);
+        function closeMobileMenu() { document.getElementById('mobileMenu').classList.remove('open'); }
+
+        /* ── SCROLL EFFECTS ── */
+        window.addEventListener('scroll', () => {
+            document.getElementById('siteNav').classList.toggle('scrolled', window.scrollY > 60);
+        });
+
+        /* ── REVEAL ON SCROLL ── */
+        function observeReveal() {
+            const obs = new IntersectionObserver(entries => {
+                entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+        }
+
+        /* ── TOAST ── */
+        function showToast(html) {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = 'toast-msg';
+            t.innerHTML = html;
+            c.appendChild(t);
+            requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 2800);
+        }
+
+        /* ── INIT ── */
+        buildStrip();
+        buildBrands();
+        buildProducts('all');
+        initHero();
+        renderCart();
+        observeReveal();
+    </script>
+    -->
+    <script src="js/main.js"></script>
+</body>
+
+</html>

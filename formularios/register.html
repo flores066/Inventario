@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Less Perfum — Crear cuenta</title>
+  <link rel="stylesheet" href="register.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+<body>
+  <div class="split-visual">
+    <div class="visual-overlay"></div>
+    <img src="https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=1200&h=1600&fit=crop" alt="Fragancia de nicho" class="visual-img">
+    <div class="visual-content">
+      <a href="../index.html" class="brand-logo">Less <span>Perfum</span></a>
+      <div class="visual-perks">
+        <p class="perks-title">Ventajas de tu cuenta</p>
+        <ul class="perks-list">
+          <li><i class="bi bi-bag-heart"></i> Guarda tus fragancias favoritas</li>
+          <li><i class="bi bi-truck"></i> Seguimiento de tus pedidos</li>
+          <li><i class="bi bi-percent"></i> Acceso a ofertas exclusivas</li>
+          <li><i class="bi bi-stars"></i> Puntos por cada compra</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="split-form">
+    <div class="form-container">
+      <div class="form-header">
+        <p class="form-label">Únete a nosotros</p>
+        <h1 class="form-title">Crear cuenta</h1>
+        <p class="form-sub">¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></p>
+      </div>
+
+      <form class="auth-form" id="registerForm" novalidate>
+        <p class="auth-feedback" id="registerFeedback" role="status" aria-live="polite"></p>
+        <div class="fields-row">
+          <div class="field-group">
+            <label for="firstName">Nombre</label>
+            <div class="input-wrap">
+              <i class="bi bi-person input-icon"></i>
+              <input type="text" id="firstName" name="firstName" placeholder="Sofía" autocomplete="given-name" required>
+            </div>
+            <span class="field-error" id="firstNameErr"></span>
+          </div>
+          <div class="field-group">
+            <label for="lastName">Apellido</label>
+            <div class="input-wrap">
+              <input type="text" id="lastName" name="lastName" placeholder="Torres" autocomplete="family-name" required>
+            </div>
+            <span class="field-error" id="lastNameErr"></span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="email">Correo electrónico</label>
+          <div class="input-wrap">
+            <i class="bi bi-envelope input-icon"></i>
+            <input type="email" id="email" name="email" placeholder="tu@correo.com" autocomplete="email" required>
+          </div>
+          <span class="field-error" id="emailErr"></span>
+        </div>
+
+        <div class="field-group">
+          <label for="phone">Teléfono <span class="optional">(opcional)</span></label>
+          <div class="input-wrap">
+            <i class="bi bi-telephone input-icon"></i>
+            <input type="tel" id="phone" name="phone" placeholder="+57 300 000 0000" autocomplete="tel">
+          </div>
+        </div>
+
+        <div class="field-group" id="passwordGroup">
+          <label for="password">Contraseña</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock input-icon"></i>
+            <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+            <button type="button" class="toggle-pass" id="togglePass" tabindex="-1"><i class="bi bi-eye" id="eyeIcon"></i></button>
+          </div>
+          <div class="strength-bar" id="strengthBar">
+            <div class="strength-track"><div class="strength-fill" id="strengthFill"></div></div>
+            <span class="strength-label" id="strengthLabel"></span>
+          </div>
+          <span class="field-error" id="passErr"></span>
+        </div>
+
+        <div class="field-group" id="confirmGroup">
+          <label for="passConfirm">Confirmar contraseña</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock-fill input-icon"></i>
+            <input type="password" id="passConfirm" name="passConfirm" placeholder="Repite tu contraseña" autocomplete="new-password">
+            <button type="button" class="toggle-pass" id="togglePass2" tabindex="-1"><i class="bi bi-eye" id="eyeIcon2"></i></button>
+          </div>
+          <span class="field-error" id="confirmErr"></span>
+        </div>
+
+        <div class="field-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="terms">
+            <span class="checkmark"></span>
+            Acepto los <a href="terms.html">Términos y condiciones</a> y la <a href="privacy.html">Política de privacidad</a>
+          </label>
+          <span class="field-error" id="termsErr"></span>
+        </div>
+
+        <label class="checkbox-label newsletter-check">
+          <input type="checkbox" id="newsletter" checked>
+          <span class="checkmark"></span>
+          Quiero recibir ofertas exclusivas por correo
+        </label>
+
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <span class="btn-text">Crear mi cuenta</span>
+          <i class="bi bi-arrow-right btn-arrow"></i>
+        </button>
+      </form>
+
+      <form class="auth-form verification-form" id="verificationForm" hidden>
+        <p class="form-sub">Enviamos un código de 6 dígitos a <strong id="verificationEmail"></strong>.</p>
+        <div class="field-group">
+          <label for="verificationCode">Código de verificación</label>
+          <div class="input-wrap">
+            <i class="bi bi-shield-check input-icon"></i>
+            <input type="text" id="verificationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+          </div>
+          <span class="field-error" id="verificationErr"></span>
+        </div>
+        <p class="auth-feedback" id="verificationFeedback" role="status" aria-live="polite"></p>
+        <button type="submit" class="btn-primary" id="verifyButton">
+          <span class="btn-text">Verificar correo</span>
+          <i class="bi bi-arrow-right btn-arrow"></i>
+        </button>
+        <button type="button" class="resend-code" id="resendCode">Reenviar código</button>
+      </form>
+
+      <div class="divider"><span>o continúa con</span></div>
+      <div class="social-btns">
+        <div class="google-button" id="googleButton" aria-label="Continuar con Google">Cargando Google…</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/register.js"></script>
+</body>
+</html>

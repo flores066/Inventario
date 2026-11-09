@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Less Perfum — Iniciar sesión</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="login.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+  <!-- PANEL VISUAL -->
+  <div class="split-visual">
+    <div class="visual-overlay"></div>
+    <img
+      src="https://images.unsplash.com/photo-1594035910387-fea47794261f?w=1200&h=1600&fit=crop"
+      alt="Fragancia" class="visual-img">
+    <div class="visual-content">
+      <a href="../index.html" class="brand-logo">Less <span>Perfum</span></a>
+      <blockquote class="visual-quote">
+        "El perfume es la forma<br>más íntima del lujo."
+      </blockquote>
+    </div>
+  </div>
+
+  <!-- PANEL FORMULARIO -->
+  <div class="split-form">
+    <div class="form-container">
+
+      <div class="form-header">
+        <p class="form-label">Bienvenido de nuevo</p>
+        <h1 class="form-title">Iniciar sesión</h1>
+        <p class="form-sub">¿No tienes cuenta? <a href="register.html">Regístrate aquí</a></p>
+      </div>
+
+      <form class="auth-form" id="loginForm" novalidate>
+        <p class="auth-feedback" id="loginFeedback" role="status" aria-live="polite"></p>
+
+        <div class="field-group">
+          <label for="email">Correo electrónico</label>
+          <div class="input-wrap">
+            <i class="bi bi-envelope input-icon"></i>
+            <input type="email" id="email" name="email" placeholder="tu@correo.com" autocomplete="email">
+          </div>
+          <span class="field-error" id="emailErr"></span>
+        </div>
+
+        <div class="field-group">
+          <label for="password">Contraseña</label>
+          <div class="input-wrap">
+            <i class="bi bi-lock input-icon"></i>
+            <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="toggle-pass" id="togglePass" tabindex="-1">
+              <i class="bi bi-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+          <span class="field-error" id="passErr"></span>
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="remember">
+            <span class="checkmark"></span>
+            Recordarme
+          </label>
+          <a href="forgot-password.html" class="forgot-link">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="button" class="resend-code" id="resendLoginCode" hidden>Reenviar código de verificación</button>
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <span class="btn-text">Entrar</span>
+          <i class="bi bi-arrow-right btn-arrow"></i>
+        </button>
+
+      </form>
+
+      <div class="divider"><span>o continúa con</span></div>
+
+      <div class="social-btns">
+        <div class="google-button" id="googleButton" aria-label="Continuar con Google">Cargando Google…</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/login.js"></script>
+</body>
+</html>
