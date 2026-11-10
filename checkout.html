@@ -52,17 +52,17 @@
           </div>
           <div class="field-group">
             <label for="phone">Teléfono</label>
-            <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+57 300 000 0000" required>
+            <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" maxlength="30" placeholder="+57 300 000 0000" required>
             <span class="field-error" id="phoneErr"></span>
           </div>
           <div class="field-group">
             <label for="address">Dirección de envío</label>
-            <input type="text" id="address" name="address" autocomplete="street-address" required>
+            <input type="text" id="address" name="address" autocomplete="street-address" maxlength="255" required>
             <span class="field-error" id="addressErr"></span>
           </div>
           <div class="field-group">
             <label for="city">Ciudad</label>
-            <input type="text" id="city" name="city" autocomplete="address-level2" required>
+            <input type="text" id="city" name="city" autocomplete="address-level2" maxlength="80" required>
             <span class="field-error" id="cityErr"></span>
           </div>
 

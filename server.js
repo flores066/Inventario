@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
+const PDFDocument = require('pdfkit');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -67,6 +68,101 @@ function sendError(res, status, message) {
 
 function clean(value, max = 255) {
   return String(value || '').trim().slice(0, max);
+}
+
+function normalizePersonName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+function isValidPersonName(value) {
+  return value.length >= 2 && value.length <= 80 &&
+    /^[\p{L}]+(?:[ '-][\p{L}]+)*$/u.test(value) &&
+    !/(\p{L})\1{3,}/iu.test(value);
+}
+
+function isValidPhone(value, optional = false) {
+  if (!value) return optional;
+  const digits = value.replace(/\D/g, '');
+  return /^\+?[\d\s()-]+$/.test(value) && digits.length >= 8 && digits.length <= 15;
+}
+
+function isValidCity(value) {
+  return value.length >= 2 && value.length <= 80 &&
+    /^[\p{L}][\p{L}\s.'-]*[\p{L}]$/u.test(value) &&
+    !/(\p{L})\1{3,}/iu.test(value);
+}
+
+function invoicePdf(invoice) {
+  return new Promise((resolve, reject) => {
+    const document = new PDFDocument({ size: 'A4', margin: 48, info: { Title: `Factura Less Perfum ${invoice.id}` } });
+    const chunks = [];
+    document.on('data', chunk => chunks.push(chunk));
+    document.on('end', () => resolve(Buffer.concat(chunks)));
+    document.on('error', reject);
+
+    const money = value => `$ ${Number(value).toLocaleString('es-CO')} COP`;
+    const left = 48;
+    const right = 547;
+    const bottom = 780;
+    const drawTableHeader = () => {
+      document.font('Helvetica-Bold').fontSize(9).fillColor('#292720');
+      const y = document.y;
+      document.text('Producto', left, y, { width: 270 });
+      document.text('Cant.', 342, y, { width: 35, align: 'right' });
+      document.text('Precio', 390, y, { width: 70, align: 'right' });
+      document.text('Total', 470, y, { width: 77, align: 'right' });
+      document.moveDown(0.7);
+      document.strokeColor('#e9e6df').moveTo(left, document.y).lineTo(right, document.y).stroke();
+      document.moveDown(0.6);
+      document.font('Helvetica').fontSize(9);
+    };
+
+    document.font('Helvetica-Bold').fontSize(23).fillColor('#292720').text('LESS PERFUM');
+    document.font('Helvetica').fontSize(11).fillColor('#806536').text('Factura de compra');
+    document.moveDown(0.5);
+    document.fontSize(10).fillColor('#292720')
+      .text(`Factura: LP-${invoice.id}`)
+      .text(`Fecha: ${new Date(invoice.createdAt).toLocaleDateString('es-CO')}`)
+      .text(`Estado del pago: ${invoice.paymentStatus}`);
+    document.moveDown();
+    document.font('Helvetica-Bold').text('Datos del cliente');
+    document.font('Helvetica')
+      .text(invoice.customer)
+      .text(invoice.email)
+      .text(invoice.phone)
+      .text(`${invoice.address}, ${invoice.city}`);
+    document.moveDown();
+    drawTableHeader();
+
+    invoice.items.forEach(item => {
+      const product = `${item.name} · ${item.brand}`;
+      const rowHeight = Math.max(20, document.heightOfString(product, { width: 270 }));
+      if (document.y + rowHeight + 10 > bottom) {
+        document.addPage();
+        drawTableHeader();
+      }
+      const y = document.y;
+      document.text(product, left, y, { width: 270 });
+      document.text(String(item.quantity), 342, y, { width: 35, align: 'right' });
+      document.text(money(item.price), 390, y, { width: 70, align: 'right' });
+      document.text(money(Number(item.price) * Number(item.quantity)), 470, y, { width: 77, align: 'right' });
+      document.y = y + rowHeight + 8;
+    });
+
+    if (document.y + 105 > bottom) document.addPage();
+    document.moveDown(0.5);
+    document.fontSize(10)
+      .text(`Subtotal: ${money(invoice.subtotal)}`, { align: 'right' })
+      .text(`IVA: ${money(invoice.tax)}`, { align: 'right' })
+      .text(`Envío: ${money(invoice.shipping)}`, { align: 'right' });
+    document.moveDown(0.4);
+    document.font('Helvetica-Bold').fontSize(13)
+      .text(`Total pagado: ${money(invoice.total)}`, { align: 'right' });
+    document.moveDown(2);
+    document.font('Helvetica').fontSize(9).fillColor('#77736b')
+      .text('Gracias por tu compra en Less Perfum.', { align: 'center' });
+    document.end();
+  });
 }
 
 function setSessionCookie(res, user, admin = false) {
@@ -502,13 +598,17 @@ app.get('/api/auth/captcha/config', (req, res) => {
 
 app.post('/api/auth/register', registrationLimiter, async (req, res) => {
   const body = req.body || {};
-  const firstName = clean(body.firstName, 80);
-  const lastName = clean(body.lastName, 80);
-  const email = clean(body.email, 160).toLowerCase();
-  const phone = clean(body.phone, 30);
+  const firstName = normalizePersonName(body.firstName);
+  const lastName = normalizePersonName(body.lastName);
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
   const password = String(body.password || '');
-  if (!firstName || !lastName || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8) {
-    return sendError(res, 400, 'Revisa nombre, apellido, correo y contraseña (mínimo 8 caracteres).');
+  const phoneValid = body.phone == null ||
+    (typeof body.phone === 'string' && body.phone.length <= 30 &&
+      (body.phone.length === 0 || (Boolean(phone) && isValidPhone(phone, true))));
+  if (!isValidPersonName(firstName) || !isValidPersonName(lastName) || !phoneValid ||
+      email.length > 160 || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8 || !password.trim()) {
+    return sendError(res, 400, 'Revisa nombre, apellido, teléfono, correo y contraseña (mínimo 8 caracteres).');
   }
   try {
     await verifyCaptcha(body.captchaToken, req);
@@ -807,11 +907,16 @@ app.post('/api/auth/google/register', async (req, res) => {
   } catch {
     return sendError(res, 401, 'La verificación de Google venció. Inicia el proceso de nuevo.');
   }
-  const firstName = clean(profile.givenName || req.body?.firstName, 80);
-  const lastName = clean(profile.familyName || req.body?.lastName, 80);
-  const phone = clean(req.body?.phone, 30);
-  if (!firstName || !lastName || !profile.sub || !profile.email) {
-    return sendError(res, 400, 'Completa tu nombre y apellido para crear la cuenta.');
+  const firstName = normalizePersonName(profile.givenName || req.body?.firstName);
+  const lastName = normalizePersonName(profile.familyName || req.body?.lastName);
+  const rawPhone = req.body?.phone;
+  const phone = typeof rawPhone === 'string' ? rawPhone.trim() : '';
+  const phoneValid = rawPhone == null ||
+    (typeof rawPhone === 'string' && rawPhone.length <= 30 &&
+      (rawPhone.length === 0 || (Boolean(phone) && isValidPhone(phone, true))));
+  if (!isValidPersonName(firstName) || !isValidPersonName(lastName) || !phoneValid ||
+      !profile.sub || !profile.email) {
+    return sendError(res, 400, 'Revisa tu nombre, apellido y teléfono para crear la cuenta.');
   }
   try {
     await verifyCaptcha(req.body?.captchaToken, req);
@@ -1316,10 +1421,14 @@ app.put('/api/cart', requireCart, async (req, res) => {
 
 app.post('/api/orders', requireCustomer, requireCart, paymentLimiter, async (req, res) => {
   if (!wompiConfigured()) return sendError(res, 503, 'Los pagos Wompi no están configurados. Revisa sus variables de entorno.');
-  const phone = clean(req.body?.phone, 30);
-  const address = clean(req.body?.address, 255);
-  const city = clean(req.body?.city, 80);
-  if (!phone || !address || address.length < 8 || !city) return sendError(res, 400, 'Completa teléfono, dirección y ciudad.');
+  const rawPhone = req.body?.phone;
+  const phone = typeof rawPhone === 'string' ? rawPhone.trim() : '';
+  const address = typeof req.body?.address === 'string' ? req.body.address.trim().replace(/\s+/g, ' ') : '';
+  const city = typeof req.body?.city === 'string' ? req.body.city.trim().replace(/\s+/g, ' ') : '';
+  if (typeof rawPhone !== 'string' || rawPhone.length > 30 || !isValidPhone(phone) || address.length < 8 || address.length > 255 ||
+      /(\p{L})\1{3,}/iu.test(address) || !isValidCity(city)) {
+    return sendError(res, 400, 'Ingresa un teléfono válido, una dirección completa y una ciudad válida.');
+  }
 
   let redirectBase;
   try {
@@ -1443,6 +1552,41 @@ app.get('/api/orders/:id/status', requireCustomer, async (req, res) => {
   } catch (error) {
     console.error('Order status lookup failed:', error.code || error.message);
     sendError(res, 500, 'No fue posible consultar el estado del pedido.');
+  }
+});
+
+app.get('/api/orders/:id/invoice', requireCustomer, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) return sendError(res, 400, 'Pedido inválido.');
+  try {
+    const { rows } = await pool.query(
+      `SELECT o.id_orden AS id, o.nombre_completo AS customer, o.correo AS email,
+        o.telefono AS phone, o.direccion AS address, o.ciudad AS city,
+        o.estado_pago AS "paymentStatus", o.subtotal, o.iva AS tax, o.envio AS shipping,
+        o.total, o.fecha_creacion AS "createdAt",
+        COALESCE((
+          SELECT json_agg(json_build_object(
+            'name', d.nombre_producto, 'brand', d.marca_producto,
+            'quantity', d.cantidad, 'price', d.precio_unitario
+          ) ORDER BY d.id_detalle)
+          FROM orden_detalles d WHERE d.id_orden=o.id_orden
+        ), '[]'::json) AS items
+       FROM ordenes o
+       WHERE o.id_orden=$1 AND o.id_usuario=$2 AND o.estado_pago='Pagado'`,
+      [id, req.customer.id]
+    );
+    if (!rows[0]) return sendError(res, 404, 'No encontramos una factura disponible para este pedido.');
+    const pdf = await invoicePdf(rows[0]);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="Factura-LessPerfum-${id}.pdf"`,
+      'Cache-Control': 'private, no-store',
+      'Content-Length': pdf.length
+    });
+    res.send(pdf);
+  } catch (error) {
+    console.error('Invoice generation failed:', error.code || error.message);
+    sendError(res, 500, 'No fue posible generar la factura.');
   }
 });
 

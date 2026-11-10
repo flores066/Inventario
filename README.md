@@ -67,7 +67,7 @@ Inicia sesión con `ADMIN_EMAIL` y `ADMIN_PASSWORD` para abrir `admin.html`. El 
 
 ## Perfil del cliente
 
-Después de iniciar sesión, el cliente llega a `account.html`, donde ve sus datos, carrito persistente y compras anteriores. Puede regresar a la tienda o continuar al checkout sin volver a iniciar sesión. La cuenta y los pedidos se validan en el servidor.
+Después de iniciar sesión, el cliente llega a `account.html`, donde ve sus datos, carrito persistente y compras anteriores. En cada pedido pagado puede descargar la factura de compra en PDF; el servidor comprueba la sesión y la propiedad del pedido antes de generarla. Puede regresar a la tienda o continuar al checkout sin volver a iniciar sesión. La cuenta y los pedidos se validan en el servidor.
 
 ## API principal
 
@@ -76,6 +76,7 @@ Después de iniciar sesión, el cliente llega a `account.html`, donde ve sus dat
 - `GET /api/account/summary` (requiere sesión de cliente; perfil, carrito y compras)
 - `GET /api/cart`, `PUT /api/cart`
 - `POST /api/orders` (requiere sesión de cliente y crea el checkout Wompi)
+- `GET /api/orders/:id/invoice` (requiere sesión del propietario y pago confirmado; descarga la factura PDF)
 - `POST /api/payments/wompi/events` (webhook firmado)
 - `/api/admin/*` (requiere sesión de administrador)
 - `GET /api/supplier/summary`, `POST /api/supplier/receipts` (requieren sesión de proveedor)

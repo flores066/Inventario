@@ -70,6 +70,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       total.className = 'order-total';
       total.textContent = `Total: ${money(order.total)}`;
       card.append(header, date, contents, total);
+      if (order.paymentStatus === 'Pagado') {
+        const invoice = document.createElement('a');
+        invoice.className = 'button-link invoice-link';
+        invoice.href = `/api/orders/${encodeURIComponent(order.id)}/invoice`;
+        invoice.download = `Factura-LessPerfum-${order.id}.pdf`;
+        invoice.textContent = 'Descargar factura PDF';
+        card.appendChild(invoice);
+      }
       container.appendChild(card);
     });
   }

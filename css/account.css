@@ -56,6 +56,7 @@ h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; lette
 .order-item p { margin: 10px 0; line-height: 1.6; }
 .order-status { padding: 5px 8px; border-radius: 20px; color: #75603d; background: #f3efe6; font-size: 11px; }
 .order-total { font-weight: 700; }
+.invoice-link { display: inline-block; margin-top: 12px; }
 footer { color: #99958a; font-size: 11px; text-align: center; }
 @media (max-width: 720px) {
   .account-shell { width: calc(100% - 24px); }

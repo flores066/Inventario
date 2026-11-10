@@ -32,13 +32,13 @@ Todos los endpoints siguientes son rutas propias del servidor Express (no creden
 
 | Método | Ruta | Uso |
 |---|---|---|
-| `POST` | `/api/auth/register` | Verifica Turnstile, crea un cliente activo e inicia sesión; no depende del correo. |
+| `POST` | `/api/auth/register` | Valida nombre, apellido, teléfono y correo; verifica Turnstile, crea un cliente activo e inicia sesión. |
 | `POST` | `/api/auth/resend-code`, `/api/auth/verify-email` | Rutas heredadas para códigos de cuentas antiguas; no se usan en el nuevo registro. |
 | `POST` | `/api/auth/login` | Inicio con correo/contraseña de cliente, proveedor o administrador. |
 | `GET` | `/api/auth/google/config` | Devuelve el Client ID público y token CSRF para iniciar el flujo de Google. |
 | `POST` | `/api/auth/google` | Valida la credencial Google; inicia sesión si la cuenta existe o inicia el registro. |
 | `GET` | `/api/auth/google/pending` | Consulta el perfil temporal pendiente del registro Google. |
-| `POST` | `/api/auth/google/register` | Crea el cliente a partir del flujo Google pendiente. |
+| `POST` | `/api/auth/google/register` | Valida nombre, apellido y teléfono; crea el cliente a partir del flujo Google pendiente. |
 | `GET` | `/api/auth/session` | Consulta la sesión actual. |
 | `POST` | `/api/auth/logout` | Cierra la sesión. |
 | `GET` | `/api/account/summary` | Recupera datos del perfil, carrito y compras del cliente autenticado. |
@@ -74,6 +74,7 @@ Todas estas rutas requieren una sesión con rol `admin`.
 | `PUT` | `/api/cart` | Actualiza el carrito validando productos y stock. |
 | `POST` | `/api/orders` | Crea el pedido, reserva/descuenta stock y devuelve los campos para el checkout alojado de Wompi. Requiere sesión de cliente. |
 | `GET` | `/api/orders/:id/status` | Consulta el estado de pago de un pedido del cliente autenticado. |
+| `GET` | `/api/orders/:id/invoice` | Descarga el PDF de un pedido pagado; solo el cliente propietario puede acceder. |
 | `POST` | `/api/payments/wompi/events` | Recibe el webhook `transaction.updated`, verifica su firma y concilia el pago con el pedido. |
 
 ## Credenciales: dónde se configuran

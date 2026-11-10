@@ -43,14 +43,14 @@
             <label for="firstName">Nombre</label>
             <div class="input-wrap">
               <i class="bi bi-person input-icon"></i>
-              <input type="text" id="firstName" name="firstName" placeholder="Sofía" autocomplete="given-name" required>
+              <input type="text" id="firstName" name="firstName" placeholder="Sofía" autocomplete="given-name" minlength="2" maxlength="80" required>
             </div>
             <span class="field-error" id="firstNameErr"></span>
           </div>
           <div class="field-group">
             <label for="lastName">Apellido</label>
             <div class="input-wrap">
-              <input type="text" id="lastName" name="lastName" placeholder="Torres" autocomplete="family-name" required>
+              <input type="text" id="lastName" name="lastName" placeholder="Torres" autocomplete="family-name" minlength="2" maxlength="80" required>
             </div>
             <span class="field-error" id="lastNameErr"></span>
           </div>
@@ -60,7 +60,7 @@
           <label for="email">Correo electrónico</label>
           <div class="input-wrap">
             <i class="bi bi-envelope input-icon"></i>
-            <input type="email" id="email" name="email" placeholder="tu@correo.com" autocomplete="email" required>
+            <input type="email" id="email" name="email" placeholder="tu@correo.com" autocomplete="email" maxlength="160" required>
           </div>
           <span class="field-error" id="emailErr"></span>
         </div>
@@ -69,8 +69,9 @@
           <label for="phone">Teléfono <span class="optional">(opcional)</span></label>
           <div class="input-wrap">
             <i class="bi bi-telephone input-icon"></i>
-            <input type="tel" id="phone" name="phone" placeholder="+57 300 000 0000" autocomplete="tel">
+            <input type="tel" id="phone" name="phone" placeholder="+57 300 000 0000" autocomplete="tel" inputmode="tel" maxlength="30">
           </div>
+          <span class="field-error" id="phoneErr"></span>
         </div>
 
         <div class="field-group" id="passwordGroup">

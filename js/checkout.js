@@ -107,20 +107,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const phone = document.getElementById('phone');
     const address = document.getElementById('address');
     const city = document.getElementById('city');
+    const phoneValue = phone.value.trim();
+    const addressValue = address.value.trim().replace(/\s+/g, ' ');
+    const cityValue = city.value.trim().replace(/\s+/g, ' ');
     document.querySelectorAll('.field-error').forEach(element => { element.textContent = ''; });
     [phone, address, city].forEach(field => field.classList.remove('error'));
     let valid = true;
-    if (!/^\+?[\d\s()-]{8,20}$/.test(phone.value.trim())) {
+    const phoneDigits = phoneValue.replace(/\D/g, '');
+    if (!/^\+?[\d\s()-]+$/.test(phoneValue) || phoneDigits.length < 8 || phoneDigits.length > 15) {
       document.getElementById('phoneErr').textContent = 'Ingresa un teléfono válido.';
       phone.classList.add('error');
       valid = false;
     }
-    if (address.value.trim().length < 8) {
+    if (addressValue.length < 8 || /(\p{L})\1{3,}/iu.test(addressValue)) {
       document.getElementById('addressErr').textContent = 'Ingresa una dirección completa.';
       address.classList.add('error');
       valid = false;
     }
-    if (city.value.trim().length < 2) {
+    if (cityValue.length < 2 || cityValue.length > 80 ||
+        !/^[\p{L}][\p{L}\s.'-]*[\p{L}]$/u.test(cityValue) ||
+        /(\p{L})\1{3,}/iu.test(cityValue)) {
       document.getElementById('cityErr').textContent = 'Ingresa tu ciudad.';
       city.classList.add('error');
       valid = false;
@@ -139,9 +145,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: phone.value.trim(),
-          address: address.value.trim(),
-          city: city.value.trim()
+          phone: phoneValue,
+          address: addressValue,
+          city: cityValue
         })
       });
       const data = await response.json();

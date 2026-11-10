@@ -156,12 +156,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const firstName = document.getElementById('firstName');
     const lastName = document.getElementById('lastName');
     const email = document.getElementById('email');
+    const phone = document.getElementById('phone');
     const password = document.getElementById('password');
     const confirmation = document.getElementById('passConfirm');
     const errors = {
       firstName: document.getElementById('firstNameErr'),
       lastName: document.getElementById('lastNameErr'),
       email: document.getElementById('emailErr'),
+      phone: document.getElementById('phoneErr'),
       password: document.getElementById('passErr'),
       confirmation: document.getElementById('confirmErr'),
       terms: document.getElementById('termsErr')
@@ -169,10 +171,33 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.values(errors).forEach(error => { error.textContent = ''; });
 
     let valid = true;
-    if (!firstName.value.trim()) { errors.firstName.textContent = 'Ingresa tu nombre.'; valid = false; }
-    if (!lastName.value.trim()) { errors.lastName.textContent = 'Ingresa tu apellido.'; valid = false; }
+    const normalizedName = value => value.trim().replace(/\s+/g, ' ');
+    const isValidName = value =>
+      value.length >= 2 && /^[\p{L}]+(?:[ '-][\p{L}]+)*$/u.test(value) &&
+      !/(\p{L})\1{3,}/iu.test(value);
+    const firstNameValue = normalizedName(firstName.value);
+    const lastNameValue = normalizedName(lastName.value);
+    const rawPhoneValue = phone.value;
+    const phoneValue = rawPhoneValue.trim();
+    if (!isValidName(firstNameValue)) {
+      errors.firstName.textContent = 'Ingresa un nombre válido, sin números ni letras repetidas.';
+      valid = false;
+    }
+    if (!isValidName(lastNameValue)) {
+      errors.lastName.textContent = 'Ingresa un apellido válido, sin números ni letras repetidas.';
+      valid = false;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { errors.email.textContent = 'Correo inválido.'; valid = false; }
-    if (!googleOnly && password.value.length < 8) { errors.password.textContent = 'Mínimo 8 caracteres.'; valid = false; }
+    const phoneDigits = phoneValue.replace(/\D/g, '');
+    if ((rawPhoneValue && !phoneValue) ||
+        (phoneValue && (!/^\+?[\d\s()-]+$/.test(phoneValue) || phoneDigits.length < 8 || phoneDigits.length > 15))) {
+      errors.phone.textContent = 'Ingresa un teléfono de 8 a 15 dígitos, sin letras.';
+      valid = false;
+    }
+    if (!googleOnly && (password.value.length < 8 || !password.value.trim())) {
+      errors.password.textContent = 'Mínimo 8 caracteres y no puede contener solo espacios.';
+      valid = false;
+    }
     if (!googleOnly && confirmation.value !== password.value) { errors.confirmation.textContent = 'Las contraseñas no coinciden.'; valid = false; }
     if (!document.getElementById('terms').checked) { errors.terms.textContent = 'Debes aceptar los términos.'; valid = false; }
     if (!captchaToken) {
@@ -191,10 +216,10 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firstName: firstName.value.trim(),
-          lastName: lastName.value.trim(),
+          firstName: firstNameValue,
+          lastName: lastNameValue,
           email: email.value.trim(),
-          phone: document.getElementById('phone').value.trim(),
+          phone: phoneValue,
           password: password.value,
           newsletter: document.getElementById('newsletter').checked,
           captchaToken
