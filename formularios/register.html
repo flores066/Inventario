@@ -112,28 +112,16 @@
           Quiero recibir ofertas exclusivas por correo
         </label>
 
+        <div class="captcha-field">
+          <div id="captchaContainer" aria-label="Verificación de seguridad"></div>
+          <span class="field-error" id="captchaErr" role="alert"></span>
+          <small id="captchaModeNote" hidden>CAPTCHA de prueba local. Configura tus llaves de Turnstile antes de publicar.</small>
+        </div>
+
         <button type="submit" class="btn-primary" id="submitBtn">
           <span class="btn-text">Crear mi cuenta</span>
           <i class="bi bi-arrow-right btn-arrow"></i>
         </button>
-      </form>
-
-      <form class="auth-form verification-form" id="verificationForm" hidden>
-        <p class="form-sub">Enviamos un código de 6 dígitos a <strong id="verificationEmail"></strong>.</p>
-        <div class="field-group">
-          <label for="verificationCode">Código de verificación</label>
-          <div class="input-wrap">
-            <i class="bi bi-shield-check input-icon"></i>
-            <input type="text" id="verificationCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
-          </div>
-          <span class="field-error" id="verificationErr"></span>
-        </div>
-        <p class="auth-feedback" id="verificationFeedback" role="status" aria-live="polite"></p>
-        <button type="submit" class="btn-primary" id="verifyButton">
-          <span class="btn-text">Verificar correo</span>
-          <i class="bi bi-arrow-right btn-arrow"></i>
-        </button>
-        <button type="button" class="resend-code" id="resendCode">Reenviar código</button>
       </form>
 
       <div class="divider"><span>o continúa con</span></div>

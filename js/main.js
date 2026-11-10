@@ -427,11 +427,26 @@ function showToast(html) {
 
 async function initStore() {
     let catalogRows = [];
-    const [productsResult, cartResult, imagesResult] = await Promise.allSettled([
+    const [productsResult, cartResult, imagesResult, sessionResult] = await Promise.allSettled([
         fetch(`${API_BASE}/products`),
         fetch(`${API_BASE}/cart`),
-        fetch(`${API_BASE}/perfume-images?count=8`)
+        fetch(`${API_BASE}/perfume-images?count=8`),
+        fetch(`${API_BASE}/auth/session`)
     ]);
+    const accountLink = document.getElementById('accountLink');
+    if (sessionResult.status === 'fulfilled' && sessionResult.value.ok) {
+        const session = await sessionResult.value.json();
+        if (session.authenticated) {
+            const destinations = { admin: 'admin.html', supplier: 'supplier.html', customer: 'account.html' };
+            const destination = destinations[session.role];
+            if (destination) {
+                accountLink.href = destination;
+                accountLink.title = session.role === 'customer' ? 'Mi perfil' : 'Abrir panel';
+                accountLink.setAttribute('aria-label', accountLink.title);
+                accountLink.innerHTML = '<i class="bi bi-person-check"></i>';
+            }
+        }
+    }
     if (productsResult.status === 'fulfilled' && productsResult.value.ok) {
         catalogRows = await productsResult.value.json();
         PRODUCTS = catalogRows;

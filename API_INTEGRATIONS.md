@@ -8,7 +8,8 @@ Este documento describe lo que está conectado en el código y lo que aún requi
 |---|---|---|---|
 | PostgreSQL | Usuarios/clientes, catálogo, carritos, pedidos, pagos e inventario | Acceso del servidor mediante `pg` | Sí: `DATABASE_URL` |
 | Google Identity Services | Inicio y registro con cuenta Google; se valida el ID token en el servidor | Integrado | Sí: `GOOGLE_CLIENT_ID` |
-| Gmail API | Enviar códigos de verificación de correo | Integrado | Sí: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_SENDER` y permisos OAuth `gmail.send` |
+| Cloudflare Turnstile | CAPTCHA para el registro tradicional y el registro completado desde Google | Verificación server-side con Siteverify; llaves oficiales de prueba solo en desarrollo | Sí en producción: `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` |
+| Gmail API | Envío de mensajes mediante rutas heredadas de verificación | Código heredado; ya no es necesario para registrar o activar clientes | Sí, solo si se usan esas rutas heredadas |
 | Wompi Colombia | Checkout alojado y confirmación de transacciones por webhook | Integrado; cobros reales no confirmados | Sí: llaves y secretos de Wompi |
 | Unsplash CDN | Imágenes de perfumes de respaldo en el catálogo, carrito y páginas públicas | Integrado mediante enlaces HTTPS verificados; no es una API de búsqueda aleatoria ni requiere clave | No |
 
@@ -25,21 +26,31 @@ Todos los endpoints siguientes son rutas propias del servidor Express (no creden
 | `GET` | `/api/health` | Comprueba conexión a la base y muestra indicadores de configuración de Google, correo y pagos. |
 | `GET` | `/api/products` | Catálogo activo; acepta filtros `category` y `search`. |
 | `GET` | `/api/perfume-images?count=8` | Devuelve enlaces de una colección de imágenes de perfumes; `count` se limita a 1–24. |
+| `GET` | `/api/auth/captcha/config` | Devuelve la site key pública de Turnstile y si está en modo de prueba. |
 
 ### Clientes y autenticación
 
 | Método | Ruta | Uso |
 |---|---|---|
-| `POST` | `/api/auth/register` | Registro con correo y contraseña; crea cliente y envía código de verificación. |
-| `POST` | `/api/auth/resend-code` | Reenvía código a una cuenta pendiente de verificar. |
-| `POST` | `/api/auth/verify-email` | Valida el código de seis dígitos y habilita la cuenta. |
-| `POST` | `/api/auth/login` | Inicio con correo/contraseña de cliente o administrador. |
+| `POST` | `/api/auth/register` | Verifica Turnstile, crea un cliente activo e inicia sesión; no depende del correo. |
+| `POST` | `/api/auth/resend-code`, `/api/auth/verify-email` | Rutas heredadas para códigos de cuentas antiguas; no se usan en el nuevo registro. |
+| `POST` | `/api/auth/login` | Inicio con correo/contraseña de cliente, proveedor o administrador. |
 | `GET` | `/api/auth/google/config` | Devuelve el Client ID público y token CSRF para iniciar el flujo de Google. |
 | `POST` | `/api/auth/google` | Valida la credencial Google; inicia sesión si la cuenta existe o inicia el registro. |
 | `GET` | `/api/auth/google/pending` | Consulta el perfil temporal pendiente del registro Google. |
 | `POST` | `/api/auth/google/register` | Crea el cliente a partir del flujo Google pendiente. |
 | `GET` | `/api/auth/session` | Consulta la sesión actual. |
 | `POST` | `/api/auth/logout` | Cierra la sesión. |
+| `GET` | `/api/account/summary` | Recupera datos del perfil, carrito y compras del cliente autenticado. |
+
+### Proveedor
+
+Estas rutas requieren una sesión con rol `proveedor`. Al iniciar el servidor, la cuenta configurada en `SUPPLIER_EMAIL` se crea o actualiza con la contraseña de `SUPPLIER_PASSWORD`.
+
+| Método | Ruta | Uso |
+|---|---|---|
+| `GET` | `/api/supplier/summary` | Recupera productos activos, stock e historial de hasta 100 recepciones. |
+| `POST` | `/api/supplier/receipts` | Registra cantidades recibidas y actualiza el stock dentro de una transacción PostgreSQL. |
 
 ### Administrador
 
@@ -75,8 +86,13 @@ Crear `inventario/.env` a partir de `inventario/.env.example` y sustituir todos 
 | `JWT_SECRET` | Generar aleatoriamente, mínimo 32 caracteres | Sí |
 | `ADMIN_EMAIL` | Correo que se usará como usuario administrador | Tratar como dato privado |
 | `ADMIN_PASSWORD` | Definir una contraseña única y robusta para el administrador | Sí |
+| `SUPPLIER_EMAIL` | Identificador de la cuenta interna del proveedor | No |
+| `SUPPLIER_PASSWORD` | Contraseña interna del proveedor; mínimo 8 caracteres | Sí |
+| `SUPPLIER_NAME` | Nombre comercial que se muestra en el portal | No |
 | `GOOGLE_CLIENT_ID` | Google Cloud Console, cliente OAuth web; autorizar el origen del sitio | Es público, pero mantenerlo en la configuración |
 | `GOOGLE_CLIENT_SECRET` | Credencial OAuth del proyecto Google Cloud | Sí |
+| `TURNSTILE_SITE_KEY` | Panel de Cloudflare Turnstile; clave pública del widget | No |
+| `TURNSTILE_SECRET_KEY` | Panel de Cloudflare Turnstile; clave secreta para Siteverify | Sí |
 | `GMAIL_REFRESH_TOKEN` | Flujo OAuth autorizado para enviar correo con permiso `https://www.googleapis.com/auth/gmail.send` | Sí |
 | `GMAIL_SENDER` | Dirección remitente autorizada para Gmail API | No es una contraseña |
 | `WOMPI_PUBLIC_KEY` | Panel de comercios Wompi; usar llave de pruebas en sandbox | Puede aparecer en el checkout; evitar publicarla fuera del sitio |
@@ -88,9 +104,11 @@ Crear `inventario/.env` a partir de `inventario/.env.example` y sustituir todos 
 
 ### Acceso del administrador
 
-No existe un usuario/contraseña predeterminado que se pueda recuperar del proyecto. El archivo `.env.example` solo contiene los textos `admin@tudominio.com` y `reemplaza-por-una-clave-segura` como ejemplos, no son credenciales válidas. Define `ADMIN_EMAIL` y `ADMIN_PASSWORD` en `.env`; luego inicia sesión desde `formularios/login.html`. El inicio exitoso redirige al panel `admin.html`.
+No hay credenciales de administrador universales en el código. `ADMIN_EMAIL` y `ADMIN_PASSWORD` se configuran localmente en `.env`; inicia sesión desde `formularios/login.html` y el sistema redirige al panel `admin.html`.
 
-En el estado inspeccionado del proyecto no existe un archivo `.env`; por tanto, no hay credenciales configuradas que se puedan reportar. Si ya configuraste un `.env` local, no compartas sus valores.
+### Acceso del proveedor
+
+Usa el correo configurado en `SUPPLIER_EMAIL` y la contraseña de `SUPPLIER_PASSWORD` para iniciar sesión desde `formularios/login.html`; el sistema redirige a `supplier.html`. El administrador consulta los movimientos de recepción desde su panel, pero no accede al portal del proveedor mediante un enlace. Al reiniciar, el servidor sincroniza la contraseña configurada con su hash en PostgreSQL.
 
 ## Recorrido del pago y destino del dinero
 

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Portal del proveedor | Less Perfum</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/supplier.css">
+</head>
+<body>
+  <main class="supplier-shell">
+    <header class="supplier-header">
+      <a class="brand" href="index.html"><span class="brand-mark">L</span><span>Less <em>Perfum</em></span></a>
+      <div class="header-right">
+        <div class="supplier-identity"><span class="avatar">P</span><span><strong id="supplierName">Proveedor</strong><small id="supplierEmail"></small></span></div>
+        <button id="logoutButton" class="logout-button" type="button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <section class="welcome-card">
+      <div><p class="eyebrow">PORTAL DE PROVEEDORES</p><h1>Recepción de inventario</h1><p>Registra los productos que acabas de entregar. Las existencias de la tienda se actualizarán al confirmar la recepción.</p></div>
+      <div class="welcome-mark" aria-hidden="true">LP</div>
+    </section>
+
+    <p class="page-feedback" id="pageFeedback" role="status" aria-live="polite"></p>
+
+    <section class="content-card" aria-labelledby="receiveTitle">
+      <div class="card-heading"><div><p class="eyebrow">NUEVA ENTREGA</p><h2 id="receiveTitle">Registrar productos recibidos</h2><p>Elige un producto del catálogo y confirma la cantidad entregada.</p></div></div>
+      <form id="receiptForm" class="receipt-form">
+        <label>Producto del catálogo<select id="productId" required><option value="">Cargando productos…</option></select></label>
+        <label>Cantidad entregada<input id="quantity" type="number" min="1" max="10000" step="1" value="1" required></label>
+        <label>Referencia de entrega <span>(opcional)</span><input id="reference" type="text" maxlength="100" placeholder="Factura o remisión"></label>
+        <label class="notes-field">Notas <span>(opcional)</span><input id="notes" type="text" maxlength="500" placeholder="Observaciones de la recepción"></label>
+        <button id="receiveButton" class="primary-button" type="submit">Confirmar recepción</button>
+      </form>
+      <p class="form-feedback" id="receiptFeedback" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="content-card" aria-labelledby="stockTitle">
+      <div class="card-heading"><div><p class="eyebrow">CATÁLOGO ACTUAL</p><h2 id="stockTitle">Existencias disponibles</h2><p>Consulta el stock antes de registrar una nueva entrega.</p></div><span class="count-pill" id="productCount">0 productos</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Marca</th><th>Stock actual</th></tr></thead><tbody id="stockRows"></tbody></table></div>
+    </section>
+
+    <section class="content-card" aria-labelledby="historyTitle">
+      <div class="card-heading"><div><p class="eyebrow">TRAZABILIDAD</p><h2 id="historyTitle">Historial de recepciones</h2><p>Últimos 100 movimientos registrados por este proveedor.</p></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Referencia</th><th>Producto</th><th>Unidades</th><th>Notas</th></tr></thead><tbody id="receiptRows"></tbody></table></div>
+    </section>
+    <footer>Las recepciones se registran en la base de datos de inventario Less Perfum.</footer>
+  </main>
+  <script src="js/supplier.js"></script>
+</body>
+</html>

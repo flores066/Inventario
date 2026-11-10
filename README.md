@@ -6,7 +6,7 @@ Tienda de fragancias con Express y una única base PostgreSQL persistente. El ca
 
 - Node.js 20 o posterior.
 - PostgreSQL 14 o posterior.
-- Credenciales de Google y Wompi para habilitar inicio de sesión social, correo de verificación y cobros reales.
+- Credenciales de Cloudflare Turnstile para proteger registros en producción; credenciales de Google y Wompi para habilitar inicio social y cobros reales.
 
 ## Instalación local
 
@@ -20,11 +20,11 @@ Copy-Item .env.example .env
 Crea la base de datos y ejecuta el único esquema:
 
 ```powershell
-createdb -U postgres less_perfum
-psql -U postgres -d less_perfum -f database/data.sql
+createdb -U postgres less_perfums
+psql -U postgres -d less_perfums -f database/data.sql
 ```
 
-Configura en `.env` la conexión de PostgreSQL, una clave `JWT_SECRET` aleatoria, `ADMIN_EMAIL` y `ADMIN_PASSWORD`. Inicia el servidor:
+Configura en `.env` la conexión de PostgreSQL, una clave `JWT_SECRET` aleatoria, `ADMIN_EMAIL` y `ADMIN_PASSWORD`. El servidor crea la cuenta interna del proveedor usando `SUPPLIER_EMAIL` y `SUPPLIER_PASSWORD`; la contraseña debe tener al menos 8 caracteres. En desarrollo, si se omiten las variables Turnstile, el registro usa las llaves de prueba oficiales. En producción, configura `TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` de tu sitio antes de iniciar.
 
 ```powershell
 npm start
@@ -32,19 +32,24 @@ npm start
 
 Abre `http://localhost:3000`. No se debe abrir el HTML directamente desde el disco: las páginas usan la API del servidor.
 
-## Google: inicio de sesión y Gmail API
+## CAPTCHA para registro
 
-1. En Google Cloud crea un proyecto y habilita **Gmail API**. Configura la pantalla de consentimiento OAuth, agrega tu cuenta remitente como usuario de prueba si la aplicación está en modo pruebas y configura los orígenes/dominios autorizados.
-2. Crea un OAuth Client ID para aplicación web. Agrega `http://localhost:3000` como origen autorizado y copia el Client ID y Client Secret a `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
-3. En OAuth 2.0 Playground (con “Use your own OAuth credentials” activado), usa ese Client ID/Secret, autoriza el alcance exacto `https://www.googleapis.com/auth/gmail.send` con la cuenta que enviará los mensajes y canjea el código por tokens. Copia el **refresh token** a `GMAIL_REFRESH_TOKEN`; establece `GMAIL_SENDER` con esa misma dirección. No uses ni compartas el access token temporal.
-4. Guarda `.env`, reinicia el servidor y revisa `http://localhost:3000/api/health`: `email` debe ser `true`. Luego prueba un registro con una dirección a la que tengas acceso y revisa bandeja de entrada y spam.
-5. No publiques ni compartas `.env`. Sin configuración de Gmail, el registro por contraseña devuelve un error explícito y no aparenta haber enviado el código. Los inicios de sesión Google requieren que el correo ya pertenezca a un cliente; los demás pasan al formulario de registro.
+El registro de clientes no envía ni requiere un código por correo. La página solicita un desafío Cloudflare Turnstile y el servidor valida su token con Siteverify antes de crear la cuenta. Las llaves de prueba integradas solo sirven para desarrollo local y no son protección contra bots.
 
-El endpoint `/api/health` informa `email: false` mientras falte cualquiera de esas cuatro variables. En aplicaciones externas que permanezcan en estado “Testing”, Google puede hacer caducar los refresh tokens de permisos sensibles tras siete días; publica/verifica la configuración de consentimiento según los requisitos de Google o vuelve a autorizar la cuenta cuando caduque. Si `email` ya es `true` pero el envío falla, revisa la consola del servidor y confirma que Gmail API esté habilitada, que el refresh token corresponda al mismo cliente OAuth y que la cuenta permita el alcance `gmail.send`.
+1. Crea un sitio en Cloudflare Turnstile e incluye tu dominio público; para probar localmente incluye `localhost` si vas a usar llaves reales.
+2. Copia la site key a `TURNSTILE_SITE_KEY` y la secret key a `TURNSTILE_SECRET_KEY`. Solo la site key se muestra en el navegador; nunca expongas el secreto.
+3. Reinicia y prueba el registro. `GET /api/auth/captcha/config` muestra la site key y el modo; los endpoints de registro verifican cada token desde el servidor y rechazan tokens faltantes, inválidos o vencidos.
+4. No publiques ni compartas `.env`. En producción la aplicación no usa llaves de prueba: si faltan las llaves reales, el CAPTCHA falla de forma cerrada.
 
-Si la consola muestra `invalid_grant`, el refresh token fue revocado, venció o no corresponde al Client ID/Client Secret configurados. Genera uno nuevo con OAuth Playground usando el mismo cliente OAuth y la misma cuenta remitente, con `https://www.googleapis.com/auth/gmail.send`, guarda el nuevo valor en `GMAIL_REFRESH_TOKEN` y reinicia el servidor. No copies el access token temporal en esa variable.
+## Google Identity Services (opcional)
 
-Los códigos se guardan como hash, vencen a los 15 minutos y tienen intentos limitados. El registro Google usa el correo verificado por Google y crea a la vez el usuario y el registro de cliente.
+El inicio de sesión con Google sigue usando Google Identity Services y requiere `GOOGLE_CLIENT_ID`. Si el correo verificado no tiene cuenta, la persona termina su registro con el formulario y el CAPTCHA. Gmail API ya no es requisito para crear o activar cuentas. Las variables de Gmail pueden omitirse.
+
+## Portal del proveedor
+
+Al arrancar, el servidor crea o actualiza el proveedor configurado mediante `SUPPLIER_EMAIL`, `SUPPLIER_PASSWORD` y `SUPPLIER_NAME`. Inicia sesión en `formularios/login.html`; el sistema redirige el rol proveedor a `supplier.html`. El portal lista productos y existencias, registra recepciones de mercancía y guarda cada movimiento con referencia, notas, fecha, proveedor y producto. El aumento de inventario se ejecuta en una transacción de PostgreSQL y el panel de administración/tienda refleja el stock.
+
+Si `SUPPLIER_EMAIL` ya pertenece a un cliente, el arranque cambia su rol a proveedor, quita su perfil de cliente y mantiene sus pedidos históricos. Conserva `SUPPLIER_PASSWORD` en `.env` y entrégalo por un canal privado. El arranque actualiza su hash en la base de datos a partir del valor configurado; cambiar el valor en `.env` rota la contraseña del proveedor al reiniciar. La contraseña `proveedor123` es débil: úsala solo en desarrollo local y reemplázala por una contraseña única y robusta antes de publicar la aplicación.
 
 ## Wompi Colombia
 
@@ -58,15 +63,21 @@ Las órdenes descuentan/reservan stock al iniciar el checkout. Si el pago se rec
 
 ## Administración
 
-Inicia sesión con `ADMIN_EMAIL` y `ADMIN_PASSWORD` para abrir `admin.html`. El panel permite revisar ventas, productos, clientes y pedidos, editar catálogo/stock y actualizar estados. Los cambios se guardan en PostgreSQL y el catálogo público se refresca automáticamente.
+Inicia sesión con `ADMIN_EMAIL` y `ADMIN_PASSWORD` para abrir `admin.html`. El panel permite revisar ventas, productos, clientes, pedidos y recepciones que registra el proveedor, editar catálogo/stock y actualizar estados. Los cambios se guardan en PostgreSQL y el catálogo público se refresca automáticamente. El panel del proveedor es independiente y no se enlaza desde la administración.
+
+## Perfil del cliente
+
+Después de iniciar sesión, el cliente llega a `account.html`, donde ve sus datos, carrito persistente y compras anteriores. Puede regresar a la tienda o continuar al checkout sin volver a iniciar sesión. La cuenta y los pedidos se validan en el servidor.
 
 ## API principal
 
 - `GET /api/health`, `GET /api/products`, `GET /api/perfume-images`
-- `POST /api/auth/register`, `POST /api/auth/verify-email`, `POST /api/auth/login`, `POST /api/auth/google`, `GET /api/auth/session`
+- `GET /api/auth/captcha/config`, `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/google`, `GET /api/auth/session`
+- `GET /api/account/summary` (requiere sesión de cliente; perfil, carrito y compras)
 - `GET /api/cart`, `PUT /api/cart`
 - `POST /api/orders` (requiere sesión de cliente y crea el checkout Wompi)
 - `POST /api/payments/wompi/events` (webhook firmado)
 - `/api/admin/*` (requiere sesión de administrador)
+- `GET /api/supplier/summary`, `POST /api/supplier/receipts` (requieren sesión de proveedor)
 
 Consulta [API_INTEGRATIONS.md](./API_INTEGRATIONS.md) para el inventario completo de endpoints, integraciones externas, variables de entorno, credenciales de administrador y recorrido/destino del pago.

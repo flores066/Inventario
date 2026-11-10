@@ -486,4 +486,8 @@ body {
   color: var(--gold-light);
   font: inherit;
 }
-.resend-code:disabled { opacity: .6; cursor: wait; }
+.captcha-field { display: grid; justify-items: start; gap: .35rem; min-height: 65px; }
+.captcha-field small { color: var(--text-muted); font-size: .68rem; }
+.captcha-field[hidden] { display: none; }
+#captchaContainer { min-height: 65px; }
+#registerForm[hidden], .field-group[hidden] { display: none; }

@@ -1,0 +1,74 @@
+:root {
+  color-scheme: light;
+  --ink: #292720;
+  --muted: #89867d;
+  --gold: #a7844d;
+  --line: #e9e6df;
+  --paper: #f7f6f2;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); }
+a { color: inherit; }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid #c3a36b; outline-offset: 3px; }
+.account-shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding-bottom: 36px; }
+.account-header, .account-header nav, .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.account-header { min-height: 74px; border-bottom: 1px solid var(--line); }
+.brand { font-family: Georgia, serif; font-size: 20px; text-decoration: none; }
+.brand span { color: var(--gold); }
+.account-header nav { gap: 12px; }
+.store-link, .text-link { color: #806536; font-size: 13px; font-weight: 650; text-decoration: none; }
+.account-header button { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; color: #625f57; background: white; }
+.welcome-card { margin: 26px 0 16px; padding: 27px 30px; border-radius: 14px; color: white; background: linear-gradient(110deg, #302a22, #64543d); }
+.eyebrow { margin: 0 0 8px; color: var(--gold); font-size: 10px; font-weight: 750; letter-spacing: .14em; }
+.welcome-card .eyebrow { color: #d5bc8e; }
+h1, h2, p { margin-top: 0; }
+h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; letter-spacing: -.025em; }
+.welcome-card h1 { margin-bottom: 5px; font-size: clamp(29px, 4vw, 40px); }
+.welcome-card > p:last-child { margin: 0; color: #e1dbd1; font-size: 13px; }
+.feedback { min-height: 18px; color: #a7473d; font-size: 13px; }
+.account-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, .8fr); gap: 16px; }
+.account-card { overflow: hidden; margin-bottom: 16px; padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: 0 5px 18px #26221808; }
+.card-heading { align-items: flex-start; margin-bottom: 14px; }
+.card-heading .eyebrow, .profile-card > .eyebrow { margin-bottom: 5px; }
+.card-heading h2, .profile-card h2 { margin: 0; font-size: 25px; }
+.card-heading p:last-child { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.button-link { padding: 10px 13px; border-radius: 8px; color: white; background: #312e28; font-size: 12px; text-decoration: none; white-space: nowrap; }
+.button-link:hover { background: #7d633d; }
+.cart-items { display: grid; gap: 11px; }
+.cart-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 11px; border-bottom: 1px solid #f0eee9; font-size: 13px; }
+.cart-row > div:first-child { display: grid; gap: 4px; }
+.cart-row small { color: var(--muted); }
+.cart-row strong { white-space: nowrap; }
+.empty-state { padding: 20px 8px; color: var(--muted); font-size: 13px; text-align: center; }
+.cart-total { display: flex; justify-content: space-between; margin: 16px 0; font-size: 14px; }
+.cart-total strong { font-size: 17px; }
+.profile-card dl { display: grid; gap: 13px; margin: 19px 0 0; }
+.profile-card dl div { display: grid; gap: 4px; }
+.profile-card dt { color: var(--muted); font-size: 11px; }
+.profile-card dd { margin: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 600; }
+.order-list { display: grid; gap: 12px; }
+.order-item { padding: 15px; border: 1px solid #f0eee9; border-radius: 9px; }
+.order-item header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.order-item h3 { margin: 0; font-size: 14px; }
+.order-item time, .order-item p { color: var(--muted); font-size: 12px; }
+.order-item p { margin: 10px 0; line-height: 1.6; }
+.order-status { padding: 5px 8px; border-radius: 20px; color: #75603d; background: #f3efe6; font-size: 11px; }
+.order-total { font-weight: 700; }
+footer { color: #99958a; font-size: 11px; text-align: center; }
+@media (max-width: 720px) {
+  .account-shell { width: calc(100% - 24px); }
+  .account-grid { grid-template-columns: 1fr; gap: 0; }
+  .account-header { min-height: 64px; }
+  .store-link { font-size: 11px; }
+  .account-header button { padding: 8px; font-size: 11px; }
+}
+@media (max-width: 440px) {
+  .account-header nav { gap: 8px; }
+  .account-header .brand { font-size: 17px; }
+  .account-header .store-link { max-width: 88px; line-height: 1.3; }
+  .welcome-card { padding: 22px; }
+  .account-card { padding: 17px; }
+  .card-heading { flex-direction: column; }
+}

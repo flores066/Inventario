@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function redirectTarget(role) {
     if (role === 'admin') return '../admin.html';
-    return params.get('redirect') === 'checkout' ? '../checkout.html' : '../index.html';
+    if (role === 'supplier') return '../supplier.html';
+    return params.get('redirect') === 'checkout' ? '../checkout.html' : '../account.html';
   }
 
   function completeSignIn(data) {
@@ -130,5 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const registerLink = document.querySelector('.form-sub a');
   if (params.get('redirect') === 'checkout') registerLink.href = 'register.html?redirect=checkout';
+  fetch('/api/auth/session')
+    .then(response => response.ok ? response.json() : null)
+    .then(session => {
+      if (session?.authenticated) window.location.replace(redirectTarget(session.role));
+    })
+    .catch(error => console.error('Existing session check failed:', error.message));
   setupGoogleButton();
 });

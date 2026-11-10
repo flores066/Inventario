@@ -1,0 +1,84 @@
+:root {
+  color-scheme: light;
+  --ink: #292720;
+  --muted: #89867d;
+  --gold: #a7844d;
+  --line: #e9e6df;
+  --paper: #f7f6f2;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { min-width: 320px; min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid #c3a36b; outline-offset: 3px; }
+.supplier-shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 0 0 35px; }
+.supplier-header { display: flex; min-height: 74px; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 10px; font-family: Georgia, serif; font-size: 19px; letter-spacing: -.03em; text-decoration: none; }
+.brand em { color: var(--gold); font-style: normal; }
+.brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 11px 11px 11px 4px; color: white; background: var(--ink); font-size: 20px; }
+.header-right, .supplier-identity { display: flex; align-items: center; gap: 12px; }
+.supplier-identity { gap: 8px; }
+.supplier-identity > span:last-child { display: grid; gap: 3px; }
+.supplier-identity strong { font-size: 11px; }
+.supplier-identity small { max-width: 210px; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; }
+.avatar { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 50%; color: #806536; background: #efe7d9; font-size: 11px; font-weight: 700; }
+.logout-button { padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; color: #625f57; background: white; font-size: 10px; font-weight: 650; }
+.logout-button:hover { border-color: #c6b28d; color: #826638; }
+.welcome-card { position: relative; display: flex; min-height: 170px; align-items: center; justify-content: space-between; gap: 18px; overflow: hidden; margin: 25px 0 18px; padding: 27px 32px; border-radius: 14px; color: white; background: linear-gradient(110deg, #302a22, #64543d); }
+.welcome-card > div:first-child { position: relative; z-index: 1; }
+.eyebrow { margin: 0 0 8px; color: var(--gold); font-size: 9px; font-weight: 750; letter-spacing: .16em; }
+.welcome-card .eyebrow { color: #d5bc8e; }
+h1, h2, p { margin-top: 0; }
+h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; letter-spacing: -.025em; }
+.welcome-card h1 { margin: 0 0 7px; font-size: clamp(27px, 4vw, 36px); }
+.welcome-card p:last-child { max-width: 620px; margin: 0; color: #ddd7ce; font-size: 11px; line-height: 1.65; }
+.welcome-mark { position: absolute; right: 40px; bottom: -60px; color: #ffffff0a; font-family: Georgia, serif; font-size: 200px; font-weight: 700; letter-spacing: -.1em; }
+.page-feedback { min-height: 18px; margin: 0 0 10px; color: #a7473d; font-size: 11px; }
+.content-card { overflow: hidden; margin: 0 0 16px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: 0 5px 18px #26221808; }
+.card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 19px 21px 13px; }
+.card-heading .eyebrow { margin-bottom: 5px; }
+.card-heading h2 { margin: 0 0 4px; font-size: 22px; }
+.card-heading p:last-child { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.receipt-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; padding: 16px 21px 18px; border-top: 1px solid #f0eee9; background: #fcfcfa; }
+.receipt-form label { display: grid; gap: 6px; color: #706d64; font-size: 10px; font-weight: 650; }
+.receipt-form label span { color: #a09c91; font-weight: 400; }
+.receipt-form input, .receipt-form select { width: 100%; min-height: 39px; padding: 8px 10px; border: 1px solid #e6e3dc; border-radius: 7px; color: var(--ink); background: white; font-size: 11px; }
+.receipt-form input:focus, .receipt-form select:focus { border-color: #c0a475; outline: none; box-shadow: 0 0 0 3px #a7844d1a; }
+.notes-field { grid-column: span 2; }
+.primary-button { grid-column: span 2; min-height: 42px; border: 0; border-radius: 8px; color: white; background: #312e28; font-size: 11px; font-weight: 650; transition: background .15s ease; }
+.primary-button:hover { background: #7d633d; }
+.primary-button:disabled { cursor: wait; opacity: .6; }
+.form-feedback { min-height: 17px; margin: 8px 21px 5px; color: #347b59; font-size: 10px; }
+.form-feedback.error { color: #a7473d; }
+.count-pill { padding: 6px 9px; border-radius: 20px; color: #77633e; background: #f3efe6; font-size: 9px; white-space: nowrap; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: 11px 15px; border-top: 1px solid #f0eee9; font-size: 10px; }
+th { color: #8d897f; background: #fafaf8; font-size: 9px; letter-spacing: .05em; text-transform: uppercase; }
+tbody tr:hover { background: #fbfaf7; }
+td:first-child { font-weight: 620; }
+.empty-cell { padding: 24px; color: var(--muted); text-align: center; }
+.stock-value { font-weight: 700; }
+footer { color: #99958a; font-size: 9px; text-align: center; }
+@media (max-width: 600px) {
+  .supplier-shell { width: calc(100% - 24px); }
+  .supplier-header { min-height: 65px; }
+  .brand { font-size: 16px; }
+  .header-right { gap: 8px; }
+  .supplier-identity small { max-width: 110px; }
+  .logout-button { padding: 8px; font-size: 9px; }
+  .welcome-card { min-height: 165px; margin-top: 16px; padding: 21px; }
+  .welcome-card h1 { font-size: 28px; }
+  .welcome-card p:last-child { max-width: 270px; font-size: 10px; }
+  .welcome-mark { right: 4px; bottom: -38px; font-size: 140px; }
+  .card-heading { align-items: flex-start; padding: 16px 14px 12px; }
+  .card-heading h2 { font-size: 20px; }
+  .receipt-form { grid-template-columns: 1fr; padding: 13px 14px 15px; }
+  .notes-field, .primary-button { grid-column: auto; }
+  .form-feedback { margin-right: 14px; margin-left: 14px; }
+  th, td { padding: 10px 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

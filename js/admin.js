@@ -183,6 +183,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function renderReceipts(entries) {
+    const body = document.getElementById('receiptRows');
+    body.replaceChildren();
+    if (!entries.length) {
+      const row = document.createElement('tr');
+      const cell = addCell(row, 'El proveedor aún no ha registrado recepciones.', 'empty-row');
+      cell.colSpan = 6;
+      body.appendChild(row);
+      return;
+    }
+    entries.forEach(receipt => {
+      const row = document.createElement('tr');
+      addCell(row, formatDate(receipt.receivedAt));
+      addCell(row, `${receipt.supplier} (${receipt.supplierEmail})`);
+      addCell(row, receipt.reference);
+      addCell(row, `${receipt.product} — ${receipt.brand}`);
+      addCell(row, `+${receipt.quantity}`);
+      addCell(row, receipt.notes);
+      body.appendChild(row);
+    });
+  }
+
   async function loadDashboard() {
     dashboardError.textContent = '';
     const data = await request('/api/admin/summary');
@@ -200,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     customers = data.customers;
     orders = data.orders;
     renderFilteredData();
+    renderReceipts(data.receipts || []);
     loginView.hidden = true;
     dashboardView.hidden = false;
   }

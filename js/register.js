@@ -1,12 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('registerForm');
-  const verifyForm = document.getElementById('verificationForm');
   const feedback = document.getElementById('registerFeedback');
-  const verificationFeedback = document.getElementById('verificationFeedback');
   const params = new URLSearchParams(window.location.search);
   let googleCsrfToken = '';
   let googleOnly = false;
-  let verificationEmail = '';
+  let captchaToken = '';
+  let captchaWidgetId = null;
 
   function setFeedback(element, message, type = '') {
     element.textContent = message;
@@ -18,17 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       return body ? JSON.parse(body) : {};
     } catch {
-      throw new Error(`El servidor devolvió una respuesta inesperada (HTTP ${response.status}). Confirma que la tienda esté abierta desde http://localhost:3000 y revisa la consola del servidor.`);
+      throw new Error(`El servidor devolvió una respuesta inesperada (HTTP ${response.status}). Abre la tienda desde http://localhost:3000.`);
     }
   }
 
   function redirectTarget() {
-    return params.get('redirect') === 'checkout' ? '../checkout.html' : '../index.html';
-  }
-
-  function finishRegistration(message) {
-    setFeedback(verificationFeedback, message, 'success');
-    window.setTimeout(() => { window.location.href = redirectTarget(); }, 900);
+    return params.get('redirect') === 'checkout' ? '../checkout.html' : '../account.html';
   }
 
   function makeToggle(buttonId, inputId, iconId) {
@@ -38,6 +32,55 @@ document.addEventListener('DOMContentLoaded', () => {
       input.type = input.type === 'password' ? 'text' : 'password';
       document.getElementById(iconId).className = input.type === 'text' ? 'bi bi-eye-slash' : 'bi bi-eye';
     });
+  }
+
+  function loadTurnstile(siteKey, testMode) {
+    const container = document.getElementById('captchaContainer');
+    if (testMode) document.getElementById('captchaModeNote').hidden = false;
+    const render = () => {
+      if (!window.turnstile) {
+        setFeedback(feedback, 'No se pudo cargar Cloudflare Turnstile. Revisa tu conexión a Internet.', 'error');
+        return;
+      }
+      captchaWidgetId = window.turnstile.render(container, {
+        sitekey: siteKey,
+        callback: token => {
+          captchaToken = token;
+          document.getElementById('captchaErr').textContent = '';
+        },
+        'expired-callback': () => {
+          captchaToken = '';
+          document.getElementById('captchaErr').textContent = 'La verificación venció. Complétala otra vez.';
+        },
+        'error-callback': () => {
+          captchaToken = '';
+          document.getElementById('captchaErr').textContent = 'No fue posible verificar el CAPTCHA. Intenta de nuevo.';
+        }
+      });
+    };
+    if (window.turnstile) {
+      render();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.onload = render;
+    script.onerror = () => setFeedback(feedback, 'No se pudo cargar Cloudflare Turnstile.', 'error');
+    document.head.appendChild(script);
+  }
+
+  async function setupCaptcha() {
+    try {
+      const response = await fetch('/api/auth/captcha/config');
+      const config = await readApiResponse(response);
+      if (!response.ok) throw new Error(config.error || 'CAPTCHA no configurado.');
+      loadTurnstile(config.siteKey, config.testMode);
+    } catch (error) {
+      document.getElementById('captchaErr').textContent = error.message;
+      document.getElementById('submitBtn').disabled = true;
+    }
   }
 
   makeToggle('togglePass', 'password', 'eyeIcon');
@@ -53,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!response.ok) throw new Error(data.error || 'No fue posible iniciar sesión con Google.');
     if (data.needsRegistration) {
       const target = new URL('register.html?google=1', window.location.href);
-      target.searchParams.set('google', '1');
       if (params.get('redirect') === 'checkout') target.searchParams.set('redirect', 'checkout');
       window.location.href = target.href;
       return;
@@ -93,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const response = await fetch('/api/auth/google/pending');
     const pending = await readApiResponse(response);
     if (!pending.pending) {
-      setFeedback(feedback, 'La verificación de Google venció. Intenta de nuevo.', 'error');
+      setFeedback(feedback, 'La verificación de Google venció. Inicia de nuevo.', 'error');
       return;
     }
     googleOnly = true;
@@ -104,12 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('passwordGroup').hidden = true;
     document.getElementById('confirmGroup').hidden = true;
     document.querySelector('.form-label').textContent = 'Un paso más';
-    setFeedback(feedback, 'Completa tus datos para crear tu cuenta con Google.');
+    setFeedback(feedback, 'Completa el CAPTCHA y confirma tus datos para crear tu cuenta con Google.');
   }
 
   form.addEventListener('submit', async event => {
     event.preventDefault();
     setFeedback(feedback, '');
+    document.getElementById('captchaErr').textContent = '';
     const firstName = document.getElementById('firstName');
     const lastName = document.getElementById('lastName');
     const email = document.getElementById('email');
@@ -132,13 +175,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!googleOnly && password.value.length < 8) { errors.password.textContent = 'Mínimo 8 caracteres.'; valid = false; }
     if (!googleOnly && confirmation.value !== password.value) { errors.confirmation.textContent = 'Las contraseñas no coinciden.'; valid = false; }
     if (!document.getElementById('terms').checked) { errors.terms.textContent = 'Debes aceptar los términos.'; valid = false; }
+    if (!captchaToken) {
+      document.getElementById('captchaErr').textContent = 'Completa la verificación CAPTCHA.';
+      valid = false;
+    }
     if (!valid) return;
 
     const button = document.getElementById('submitBtn');
     button.disabled = true;
     button.classList.add('loading');
-    button.querySelector('.btn-text').textContent = googleOnly ? 'Creando cuenta…' : 'Enviando código…';
-    setFeedback(feedback, googleOnly ? 'Guardando tus datos…' : 'Creando tu cuenta y enviando el código…');
+    button.querySelector('.btn-text').textContent = 'Creando cuenta…';
+    setFeedback(feedback, 'Registrando tu cuenta…');
     try {
       const response = await fetch(googleOnly ? '/api/auth/google/register' : '/api/auth/register', {
         method: 'POST',
@@ -149,92 +196,22 @@ document.addEventListener('DOMContentLoaded', () => {
           email: email.value.trim(),
           phone: document.getElementById('phone').value.trim(),
           password: password.value,
-          newsletter: document.getElementById('newsletter').checked
+          newsletter: document.getElementById('newsletter').checked,
+          captchaToken
         })
       });
       const data = await readApiResponse(response);
-      if (!response.ok) {
-        if (!googleOnly && response.status === 502 && data.error.includes('cuenta quedó pendiente')) {
-          verificationEmail = email.value.trim();
-          document.getElementById('verificationEmail').textContent = verificationEmail;
-          form.hidden = true;
-          verifyForm.hidden = false;
-          document.querySelector('.divider').hidden = true;
-          document.querySelector('.social-btns').hidden = true;
-          setFeedback(verificationFeedback, data.error, 'error');
-          return;
-        }
-        throw new Error(data.error || 'No fue posible crear la cuenta.');
-      }
-      if (googleOnly) {
-        setFeedback(feedback, 'Cuenta creada e inicio de sesión exitoso. Redirigiendo…', 'success');
-        window.setTimeout(() => { window.location.href = redirectTarget(); }, 800);
-        return;
-      }
-      verificationEmail = data.email;
-      document.getElementById('verificationEmail').textContent = verificationEmail;
-      form.hidden = true;
-      verifyForm.hidden = false;
-      document.querySelector('.divider').hidden = true;
-      document.querySelector('.social-btns').hidden = true;
-      document.getElementById('verificationCode').focus();
+      if (!response.ok) throw new Error(data.error || 'No fue posible crear la cuenta.');
+      setFeedback(feedback, 'Cuenta creada e inicio de sesión exitoso. Redirigiendo…', 'success');
+      window.setTimeout(() => { window.location.href = redirectTarget(); }, 900);
     } catch (error) {
       setFeedback(feedback, error.message, 'error');
+      captchaToken = '';
+      if (window.turnstile && captchaWidgetId !== null) window.turnstile.reset(captchaWidgetId);
     } finally {
       button.disabled = false;
       button.classList.remove('loading');
       button.querySelector('.btn-text').textContent = 'Crear mi cuenta';
-    }
-  });
-
-  verifyForm.addEventListener('submit', async event => {
-    event.preventDefault();
-    document.getElementById('verificationErr').textContent = '';
-    verificationFeedback.textContent = '';
-    const code = document.getElementById('verificationCode').value.trim();
-    if (!/^\d{6}$/.test(code)) {
-      document.getElementById('verificationErr').textContent = 'Ingresa el código de 6 dígitos.';
-      return;
-    }
-    const button = document.getElementById('verifyButton');
-    button.disabled = true;
-    button.classList.add('loading');
-    button.querySelector('.btn-text').textContent = 'Verificando…';
-    setFeedback(verificationFeedback, 'Verificando tu correo…');
-    try {
-      const response = await fetch('/api/auth/verify-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: verificationEmail, code })
-      });
-      const data = await readApiResponse(response);
-      if (!response.ok) throw new Error(data.error || 'No fue posible verificar el correo.');
-      finishRegistration('Correo verificado e inicio de sesión exitoso. Redirigiendo…');
-    } catch (error) {
-      setFeedback(verificationFeedback, error.message, 'error');
-    } finally {
-      button.disabled = false;
-      button.classList.remove('loading');
-      button.querySelector('.btn-text').textContent = 'Verificar correo';
-    }
-  });
-
-  document.getElementById('resendCode').addEventListener('click', async event => {
-    event.currentTarget.disabled = true;
-    setFeedback(verificationFeedback, 'Solicitando un nuevo código…');
-    try {
-      const response = await fetch('/api/auth/resend-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: verificationEmail })
-      });
-      const data = await readApiResponse(response);
-      if (!response.ok) throw new Error(data.error || 'No fue posible reenviar el código.');
-      setFeedback(verificationFeedback, data.message, 'success');
-    } catch (error) {
-      setFeedback(verificationFeedback, error.message, 'error');
-    } finally {
-      event.currentTarget.disabled = false;
     }
   });
 
@@ -263,5 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('email').value = params.get('email');
   }
   initializeGoogleRegistration().catch(error => setFeedback(feedback, error.message, 'error'));
+  setupCaptcha();
   setupGoogleButton();
 });

@@ -7,15 +7,21 @@ CREATE TABLE IF NOT EXISTS usuarios (
   correo VARCHAR(160) NOT NULL UNIQUE,
   telefono VARCHAR(30),
   contrasena VARCHAR(255),
+  rol VARCHAR(20) NOT NULL DEFAULT 'cliente' CHECK (rol IN ('cliente', 'proveedor')),
   google_sub VARCHAR(255) UNIQUE,
   estado VARCHAR(12) NOT NULL DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo')),
   newsletter BOOLEAN NOT NULL DEFAULT TRUE,
   fecha_registro TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+select * from usuarios;
+
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS google_sub VARCHAR(255);
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS newsletter BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE usuarios ALTER COLUMN contrasena DROP NOT NULL;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS rol VARCHAR(20) NOT NULL DEFAULT 'cliente';
+ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
+ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check CHECK (rol IN ('cliente', 'proveedor'));
 CREATE UNIQUE INDEX IF NOT EXISTS usuarios_google_sub_unique ON usuarios (google_sub) WHERE google_sub IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS clientes (
@@ -27,8 +33,16 @@ CREATE TABLE IF NOT EXISTS clientes (
   fecha_registro TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS proveedores (
+  id_proveedor SERIAL PRIMARY KEY,
+  id_usuario INTEGER NOT NULL UNIQUE REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  nombre_comercial VARCHAR(120) NOT NULL DEFAULT 'Proveedor Less Perfum',
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+  fecha_registro TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 INSERT INTO clientes (id_usuario)
-SELECT id_usuario FROM usuarios
+SELECT id_usuario FROM usuarios WHERE rol = 'cliente'
 ON CONFLICT (id_usuario) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS categorias (
@@ -121,9 +135,28 @@ CREATE TABLE IF NOT EXISTS codigos_verificacion (
   creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS movimientos_inventario (
+  id_movimiento SERIAL PRIMARY KEY,
+  id_proveedor INTEGER NOT NULL REFERENCES proveedores(id_proveedor),
+  id_producto INTEGER NOT NULL REFERENCES productos(id_producto),
+  cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+  referencia VARCHAR(100),
+  notas VARCHAR(500),
+  fecha_recepcion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS movimientos_inventario_fecha_idx ON movimientos_inventario (fecha_recepcion DESC);
 CREATE INDEX IF NOT EXISTS ordenes_fecha_creacion_idx ON ordenes (fecha_creacion DESC);
 CREATE INDEX IF NOT EXISTS ordenes_reserva_idx ON ordenes (reserva_hasta) WHERE stock_reservado = TRUE;
 CREATE INDEX IF NOT EXISTS productos_categoria_activo_idx ON productos (id_categoria, activo);
+
+UPDATE usuarios
+SET estado = 'Activo'
+WHERE estado = 'Inactivo'
+  AND rol = 'cliente'
+  AND id_usuario IN (SELECT id_usuario FROM codigos_verificacion);
+DELETE FROM codigos_verificacion
+WHERE id_usuario IN (SELECT id_usuario FROM usuarios WHERE rol = 'cliente' AND estado = 'Activo');
 
 INSERT INTO categorias (nombre, descripcion) VALUES
   ('mujer', 'Fragancias femeninas'),

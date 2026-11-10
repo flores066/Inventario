@@ -20,6 +20,14 @@ const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
 const gmailRefreshToken = process.env.GMAIL_REFRESH_TOKEN || '';
 const gmailSender = process.env.GMAIL_SENDER || '';
+const turnstileTestMode = process.env.NODE_ENV !== 'production';
+const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY ||
+  (turnstileTestMode ? '1x00000000000000000000AA' : '');
+const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY ||
+  (turnstileTestMode ? '1x0000000000000000000000000000000AA' : '');
+const supplierEmail = (process.env.SUPPLIER_EMAIL || '').trim().toLowerCase();
+const supplierPassword = process.env.SUPPLIER_PASSWORD || '';
+const supplierName = process.env.SUPPLIER_NAME || 'Proveedor Less Perfum';
 const wompiPublicKey = process.env.WOMPI_PUBLIC_KEY || '';
 const wompiIntegritySecret = process.env.WOMPI_INTEGRITY_SECRET || '';
 const wompiEventsSecret = process.env.WOMPI_EVENTS_SECRET || '';
@@ -46,6 +54,7 @@ const secureCookies = process.env.NODE_ENV === 'production';
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 const codeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
 const paymentLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
+const registrationLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 8, standardHeaders: true, legacyHeaders: false });
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '20kb' }));
@@ -83,11 +92,11 @@ function requireAdmin(req, res, next) {
 
 async function requireCustomer(req, res, next) {
   const user = getUser(req);
-  if (!user || user.role === 'admin' || !Number.isInteger(Number(user.id))) {
+  if (!user || ['admin', 'supplier'].includes(user.role) || !Number.isInteger(Number(user.id))) {
     return sendError(res, 401, 'Inicia sesión o regístrate para continuar con tu compra.');
   }
   try {
-    const result = await pool.query("SELECT 1 FROM usuarios WHERE id_usuario=$1 AND estado='Activo'", [user.id]);
+    const result = await pool.query("SELECT 1 FROM usuarios WHERE id_usuario=$1 AND estado='Activo' AND rol='cliente'", [user.id]);
     if (!result.rows[0]) {
       res.clearCookie(authCookie, { httpOnly: true, sameSite: 'lax', secure: secureCookies });
       return sendError(res, 401, 'Tu cuenta no está activa. Inicia sesión con una cuenta habilitada.');
@@ -98,6 +107,30 @@ async function requireCustomer(req, res, next) {
   }
   req.customer = user;
   next();
+}
+
+async function requireSupplier(req, res, next) {
+  const user = getUser(req);
+  if (!user || user.role !== 'supplier' || !Number.isInteger(Number(user.id))) {
+    return sendError(res, 401, 'Inicia sesión con una cuenta de proveedor para continuar.');
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT p.id_proveedor FROM proveedores p
+       JOIN usuarios u ON u.id_usuario=p.id_usuario
+       WHERE p.id_usuario=$1 AND p.activo=TRUE AND u.estado='Activo' AND u.rol='proveedor'`,
+      [user.id]
+    );
+    if (!rows[0]) {
+      res.clearCookie(authCookie, { httpOnly: true, sameSite: 'lax', secure: secureCookies });
+      return sendError(res, 401, 'La cuenta de proveedor está desactivada.');
+    }
+    req.supplier = { ...user, supplierId: Number(rows[0].id_proveedor) };
+    next();
+  } catch (error) {
+    console.error('Supplier session check failed:', error.code || error.message);
+    return sendError(res, 500, 'No fue posible validar la cuenta de proveedor.');
+  }
 }
 
 function requireCart(req, res, next) {
@@ -134,7 +167,7 @@ async function attachCartToUser(client, userId, cartId) {
 }
 
 function customerToken(user) {
-  return { id: Number(user.id_usuario), name: `${user.nombre} ${user.apellido}`.trim(), email: user.correo };
+  return { id: Number(user.id_usuario), name: `${user.nombre} ${user.apellido}`.trim(), email: user.correo, role: 'customer' };
 }
 
 function setCustomerSession(res, user) {
@@ -146,6 +179,103 @@ function ensureMailConfigured() {
     const error = new Error('EMAIL_NOT_CONFIGURED');
     error.code = 'EMAIL_NOT_CONFIGURED';
     throw error;
+  }
+}
+
+async function verifyCaptcha(token, req) {
+  if (!turnstileSiteKey || !turnstileSecretKey) {
+    const error = new Error('CAPTCHA_NOT_CONFIGURED');
+    error.code = 'CAPTCHA_NOT_CONFIGURED';
+    throw error;
+  }
+  if (typeof token !== 'string' || token.length < 10 || token.length > 2048) {
+    const error = new Error('CAPTCHA_REQUIRED');
+    error.code = 'CAPTCHA_REQUIRED';
+    throw error;
+  }
+  const body = new URLSearchParams({ secret: turnstileSecretKey, response: token });
+  if (req.ip) body.set('remoteip', req.ip);
+  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!response.ok) throw new Error('CAPTCHA_PROVIDER_UNAVAILABLE');
+  const result = await response.json();
+  if (!result.success) {
+    const error = new Error('CAPTCHA_INVALID');
+    error.code = 'CAPTCHA_INVALID';
+    throw error;
+  }
+}
+
+function captchaError(res, error) {
+  if (error.code === 'CAPTCHA_NOT_CONFIGURED') {
+    return sendError(res, 503, 'El CAPTCHA no está configurado. Configura Cloudflare Turnstile para este dominio.');
+  }
+  if (error.code === 'CAPTCHA_REQUIRED' || error.code === 'CAPTCHA_INVALID') {
+    return sendError(res, 400, 'Completa la verificación CAPTCHA antes de registrarte.');
+  }
+  console.error('CAPTCHA verification failed:', error.code || error.message);
+  return sendError(res, 502, 'No fue posible validar el CAPTCHA. Intenta de nuevo.');
+}
+
+function setSupplierSession(res, supplier) {
+  setSessionCookie(res, {
+    id: Number(supplier.id_usuario),
+    name: supplier.nombre_comercial,
+    email: supplier.correo,
+    role: 'supplier'
+  });
+}
+
+async function provisionSupplierAccount() {
+  if (!supplierEmail || !supplierPassword || supplierPassword.length < 8) {
+    throw new Error('Configura SUPPLIER_EMAIL y SUPPLIER_PASSWORD (mínimo 8 caracteres) en .env.');
+  }
+  const passwordHash = await bcrypt.hash(supplierPassword, 12);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const existing = await client.query('SELECT id_usuario, rol FROM usuarios WHERE correo=$1 FOR UPDATE', [supplierEmail]);
+    let account = existing.rows[0];
+    if (account && account.rol !== 'proveedor' && account.rol !== 'cliente') {
+      throw new Error('SUPPLIER_EMAIL_IN_USE');
+    }
+    if (!account) {
+      const { rows } = await client.query(
+        `INSERT INTO usuarios (nombre,apellido,correo,contrasena,estado,rol,newsletter)
+         VALUES ('Proveedor','Less Perfum',$1,$2,'Activo','proveedor',FALSE)
+         RETURNING id_usuario, rol`,
+        [supplierEmail, passwordHash]
+      );
+      account = rows[0];
+    } else {
+      if (account.rol === 'cliente') {
+        await client.query('DELETE FROM clientes WHERE id_usuario=$1', [account.id_usuario]);
+      }
+      await client.query(
+        `UPDATE usuarios SET contrasena=$1, estado='Activo', rol='proveedor', nombre='Proveedor', apellido='Less Perfum'
+         WHERE id_usuario=$2`,
+        [passwordHash, account.id_usuario]
+      );
+    }
+    await client.query(
+      `INSERT INTO proveedores (id_usuario,nombre_comercial,activo)
+       VALUES ($1,$2,TRUE)
+       ON CONFLICT (id_usuario) DO UPDATE SET nombre_comercial=EXCLUDED.nombre_comercial, activo=TRUE`,
+      [account.id_usuario, supplierName]
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (error.message === 'SUPPLIER_EMAIL_IN_USE') {
+      throw new Error('SUPPLIER_EMAIL_IN_USE: el correo configurado ya pertenece a un cliente.');
+    }
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -363,7 +493,14 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.post('/api/auth/register', codeLimiter, async (req, res) => {
+app.get('/api/auth/captcha/config', (req, res) => {
+  if (!turnstileSiteKey || !turnstileSecretKey) {
+    return sendError(res, 503, 'El CAPTCHA no está configurado.');
+  }
+  res.json({ provider: 'Cloudflare Turnstile', siteKey: turnstileSiteKey, testMode: turnstileTestMode });
+});
+
+app.post('/api/auth/register', registrationLimiter, async (req, res) => {
   const body = req.body || {};
   const firstName = clean(body.firstName, 80);
   const lastName = clean(body.lastName, 80);
@@ -374,26 +511,26 @@ app.post('/api/auth/register', codeLimiter, async (req, res) => {
     return sendError(res, 400, 'Revisa nombre, apellido, correo y contraseña (mínimo 8 caracteres).');
   }
   try {
-    ensureMailConfigured();
+    await verifyCaptcha(body.captchaToken, req);
+  } catch (error) {
+    return captchaError(res, error);
+  }
+  try {
     const passwordHash = await bcrypt.hash(password, 12);
-    const code = String(crypto.randomInt(100000, 1000000));
     const client = await pool.connect();
     let user;
+    let cartId;
     try {
       await client.query('BEGIN');
       const { rows } = await client.query(
-        `INSERT INTO usuarios (nombre, apellido, correo, telefono, contrasena, estado, newsletter)
-         VALUES ($1,$2,$3,$4,$5,'Inactivo',$6)
+        `INSERT INTO usuarios (nombre, apellido, correo, telefono, contrasena, estado, rol, newsletter)
+         VALUES ($1,$2,$3,$4,$5,'Activo','cliente',$6)
          RETURNING id_usuario, nombre, apellido, correo`,
         [firstName, lastName, email, phone || null, passwordHash, Boolean(body.newsletter)]
       );
       user = rows[0];
       await client.query('INSERT INTO clientes (id_usuario) VALUES ($1)', [user.id_usuario]);
-      await client.query(
-        `INSERT INTO codigos_verificacion (id_usuario, codigo_hash, expira_en, intentos)
-         VALUES ($1,$2,CURRENT_TIMESTAMP + INTERVAL '15 minutes',0)`,
-        [user.id_usuario, verificationHash(code)]
-      );
+      cartId = await attachCartToUser(client, user.id_usuario, req.cookies[cartCookie]);
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK');
@@ -401,15 +538,14 @@ app.post('/api/auth/register', codeLimiter, async (req, res) => {
     } finally {
       client.release();
     }
-    try {
-      await sendEmail(email, 'Verifica tu cuenta Less Perfum', `Tu código de verificación es ${code}. Vence en 15 minutos.`);
-    } catch (error) {
-      console.error('Verification email delivery failed:', error.code || error.message);
-      return sendError(res, 502, 'La cuenta quedó pendiente, pero no se pudo enviar el código. Usa “Reenviar código”.');
-    }
-    res.status(201).json({ verificationRequired: true, email, message: 'Te enviamos un código de verificación.' });
+    setCustomerSession(res, user);
+    if (cartId && cartId !== req.cookies[cartCookie]) setCartCookie(res, cartId);
+    res.status(201).json({
+      user: { name: `${user.nombre} ${user.apellido}`, email: user.correo },
+      role: 'customer',
+      message: 'Cuenta creada e inicio de sesión exitoso.'
+    });
   } catch (error) {
-    if (error.code === 'EMAIL_NOT_CONFIGURED') return mailError(res, error);
     if (error.code === '23505') return sendError(res, 409, 'Este correo ya está registrado.');
     console.error('Customer registration failed:', error.code || error.message);
     sendError(res, 500, 'No fue posible crear la cuenta.');
@@ -519,7 +655,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      `SELECT id_usuario, nombre, apellido, correo, contrasena, estado
+      `SELECT id_usuario, nombre, apellido, correo, contrasena, estado, rol
        FROM usuarios WHERE correo=$1`,
       [email]
     );
@@ -533,8 +669,30 @@ app.post('/api/auth/login', async (req, res) => {
     if (!account.contrasena || !(await bcrypt.compare(password, account.contrasena))) {
       return sendError(res, 401, 'Correo o contraseña incorrectos.');
     }
+    if (account.rol === 'proveedor') {
+      if (account.estado !== 'Activo') return sendError(res, 403, 'La cuenta de proveedor está desactivada.');
+      const { rows: supplierRows } = await pool.query(
+        `SELECT p.id_proveedor, p.nombre_comercial FROM proveedores p
+         WHERE p.id_usuario=$1 AND p.activo=TRUE`,
+        [account.id_usuario]
+      );
+      if (!supplierRows[0]) return sendError(res, 403, 'La cuenta de proveedor está desactivada.');
+      setSupplierSession(res, { ...account, nombre_comercial: supplierRows[0].nombre_comercial });
+      return res.json({
+        user: { name: supplierRows[0].nombre_comercial, email: account.correo },
+        role: 'supplier'
+      });
+    }
+    if (account.rol !== 'cliente') return sendError(res, 403, 'Esta cuenta no puede iniciar sesión desde aquí.');
     if (account.estado !== 'Activo') {
-      return sendError(res, 403, 'Verifica tu correo antes de iniciar sesión.');
+      const { rows: pendingRows } = await pool.query(
+        'SELECT 1 FROM codigos_verificacion WHERE id_usuario=$1 AND expira_en > CURRENT_TIMESTAMP',
+        [account.id_usuario]
+      );
+      if (!pendingRows[0]) return sendError(res, 403, 'La cuenta está desactivada. Contacta con la tienda.');
+      await pool.query("UPDATE usuarios SET estado='Activo' WHERE id_usuario=$1", [account.id_usuario]);
+      await pool.query('DELETE FROM codigos_verificacion WHERE id_usuario=$1', [account.id_usuario]);
+      account.estado = 'Activo';
     }
     const client = await pool.connect();
     let cartId;
@@ -550,7 +708,10 @@ app.post('/api/auth/login', async (req, res) => {
     }
     setCustomerSession(res, account);
     if (cartId && cartId !== req.cookies[cartCookie]) setCartCookie(res, cartId);
-    res.json({ user: { name: `${account.nombre} ${account.apellido}`, email: account.correo } });
+    res.json({
+      user: { name: `${account.nombre} ${account.apellido}`, email: account.correo },
+      role: 'customer'
+    });
   } catch (error) {
     console.error('Login failed:', error.code || error.message);
     sendError(res, 500, 'No fue posible iniciar sesión.');
@@ -582,12 +743,16 @@ app.post('/api/auth/google', async (req, res) => {
     try {
       await client.query('BEGIN');
       const lookup = await client.query(
-        `SELECT id_usuario, nombre, apellido, correo, estado
+        `SELECT id_usuario, nombre, apellido, correo, estado, rol
          FROM usuarios WHERE google_sub=$1 OR correo=$2 ORDER BY (google_sub=$1) DESC LIMIT 1 FOR UPDATE`,
         [profile.sub, email]
       );
       account = lookup.rows[0];
       if (account) {
+        if (account.rol !== 'cliente') {
+          await client.query('ROLLBACK');
+          return sendError(res, 403, 'Esta cuenta no puede iniciar sesión como cliente.');
+        }
         if (account.estado !== 'Activo') {
           await client.query("UPDATE usuarios SET estado='Activo', google_sub=$1 WHERE id_usuario=$2", [profile.sub, account.id_usuario]);
           await client.query('DELETE FROM codigos_verificacion WHERE id_usuario=$1', [account.id_usuario]);
@@ -648,13 +813,18 @@ app.post('/api/auth/google/register', async (req, res) => {
   if (!firstName || !lastName || !profile.sub || !profile.email) {
     return sendError(res, 400, 'Completa tu nombre y apellido para crear la cuenta.');
   }
+  try {
+    await verifyCaptcha(req.body?.captchaToken, req);
+  } catch (error) {
+    return captchaError(res, error);
+  }
   let client;
   try {
     client = await pool.connect();
     await client.query('BEGIN');
     const { rows } = await client.query(
-      `INSERT INTO usuarios (nombre, apellido, correo, telefono, google_sub, estado, newsletter)
-       VALUES ($1,$2,$3,$4,$5,'Activo',$6)
+      `INSERT INTO usuarios (nombre, apellido, correo, telefono, google_sub, estado, rol, newsletter)
+       VALUES ($1,$2,$3,$4,$5,'Activo','cliente',$6)
        RETURNING id_usuario, nombre, apellido, correo`,
       [firstName, lastName, profile.email, phone || null, profile.sub, Boolean(req.body?.newsletter)]
     );
@@ -665,7 +835,11 @@ app.post('/api/auth/google/register', async (req, res) => {
     setCustomerSession(res, user);
     if (cartId && cartId !== req.cookies[cartCookie]) setCartCookie(res, cartId);
     res.clearCookie(googlePendingCookie, { httpOnly: true, sameSite: 'lax', secure: secureCookies });
-    res.status(201).json({ user: { name: `${user.nombre} ${user.apellido}`, email: user.correo }, message: 'Cuenta creada e inicio de sesión exitoso.' });
+    res.status(201).json({
+      user: { name: `${user.nombre} ${user.apellido}`, email: user.correo },
+      role: 'customer',
+      message: 'Cuenta creada e inicio de sesión exitoso.'
+    });
   } catch (error) {
     if (client) await client.query('ROLLBACK').catch(() => {});
     if (error.code === '23505') return sendError(res, 409, 'Ese correo ya tiene una cuenta. Inicia sesión.');
@@ -679,9 +853,27 @@ app.post('/api/auth/google/register', async (req, res) => {
 app.get('/api/auth/session', async (req, res) => {
   const user = getUser(req);
   if (!user) return res.json({ authenticated: false });
-  if (user.role !== 'admin') {
+  if (user.role === 'supplier') {
     try {
-      const { rows } = await pool.query("SELECT 1 FROM usuarios WHERE id_usuario=$1 AND estado='Activo'", [user.id]);
+      const { rows } = await pool.query(
+        `SELECT 1 FROM proveedores p JOIN usuarios u ON u.id_usuario=p.id_usuario
+         WHERE p.id_usuario=$1 AND p.activo=TRUE AND u.estado='Activo' AND u.rol='proveedor'`,
+        [user.id]
+      );
+      if (!rows[0]) {
+        res.clearCookie(authCookie, { httpOnly: true, sameSite: 'lax', secure: secureCookies });
+        return res.json({ authenticated: false });
+      }
+    } catch (error) {
+      console.error('Supplier session lookup failed:', error.code || error.message);
+      return sendError(res, 500, 'No fue posible validar la sesión.');
+    }
+  } else if (user.role !== 'admin') {
+    try {
+      const { rows } = await pool.query(
+        "SELECT 1 FROM usuarios WHERE id_usuario=$1 AND estado='Activo' AND rol='cliente'",
+        [user.id]
+      );
       if (!rows[0]) {
         res.clearCookie(authCookie, { httpOnly: true, sameSite: 'lax', secure: secureCookies });
         return res.json({ authenticated: false });
@@ -703,6 +895,72 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/account/summary', requireCustomer, requireCart, async (req, res) => {
+  try {
+    const client = await pool.connect();
+    let accountCartId;
+    try {
+      await client.query('BEGIN');
+      accountCartId = await attachCartToUser(client, req.customer.id, req.cartId);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    if (accountCartId && accountCartId !== req.cartId) setCartCookie(res, accountCartId);
+    if (accountCartId) req.cartId = accountCartId;
+    const [userResult, cartResult, orderResult] = await Promise.all([
+      pool.query(
+        `SELECT u.nombre AS name, u.apellido AS surname, u.correo AS email, u.telefono AS phone,
+          c.direccion AS address, c.ciudad AS city
+         FROM usuarios u JOIN clientes c ON c.id_usuario=u.id_usuario
+         WHERE u.id_usuario=$1 AND u.estado='Activo'`,
+        [req.customer.id]
+      ),
+      pool.query(
+        `SELECT p.id_producto AS id, p.nombre AS name, p.marca AS brand, p.precio AS price,
+          p.imagen AS img, cd.cantidad AS quantity
+         FROM carrito_detalles cd
+         JOIN productos p ON p.id_producto=cd.id_producto
+         WHERE cd.id_carrito=$1 AND p.activo=TRUE
+         ORDER BY p.nombre`,
+        [req.cartId]
+      ),
+      pool.query(
+        `SELECT o.id_orden AS id, o.estado AS status, o.estado_pago AS "paymentStatus",
+          o.total, o.fecha_creacion AS "createdAt",
+          COALESCE((
+            SELECT json_agg(json_build_object(
+              'name', d.nombre_producto, 'brand', d.marca_producto,
+              'quantity', d.cantidad, 'price', d.precio_unitario
+            ) ORDER BY d.id_detalle)
+            FROM orden_detalles d WHERE d.id_orden=o.id_orden
+          ), '[]'::json) AS items
+         FROM ordenes o
+         WHERE o.id_usuario=$1
+         ORDER BY o.fecha_creacion DESC LIMIT 50`,
+        [req.customer.id]
+      )
+    ]);
+    if (!userResult.rows[0]) return sendError(res, 401, 'Inicia sesión de nuevo para consultar tu perfil.');
+    res.json({
+      customer: userResult.rows[0],
+      cart: cartResult.rows.map(item => ({
+        ...item,
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        img: item.img || perfumeImages[Number(item.id) % perfumeImages.length]
+      })),
+      orders: orderResult.rows.map(order => ({ ...order, total: Number(order.total) }))
+    });
+  } catch (error) {
+    console.error('Customer account summary failed:', error.code || error.message);
+    sendError(res, 500, 'No fue posible cargar tu perfil.');
+  }
+});
+
 app.get('/api/admin/session', (req, res) => {
   const user = getUser(req);
   if (!user || user.role !== 'admin') return res.json({ authenticated: false });
@@ -716,7 +974,7 @@ app.post('/api/admin/logout', (req, res) => {
 
 app.get('/api/admin/summary', requireAdmin, async (req, res) => {
   try {
-    const [productResult, orderResult, customerResult, salesResult] = await Promise.all([
+    const [productResult, orderResult, customerResult, salesResult, receiptResult] = await Promise.all([
       pool.query(
         `SELECT p.id_producto AS id, p.nombre AS name, p.marca AS brand, p.precio AS price,
           p.imagen AS img,
@@ -738,7 +996,18 @@ app.get('/api/admin/summary', requireAdmin, async (req, res) => {
          FROM clientes c JOIN usuarios u ON u.id_usuario=c.id_usuario
          ORDER BY u.fecha_registro DESC`
       ),
-      pool.query("SELECT COALESCE(SUM(total),0) AS total FROM ordenes WHERE estado_pago='Pagado'")
+      pool.query("SELECT COALESCE(SUM(total),0) AS total FROM ordenes WHERE estado_pago='Pagado'"),
+      pool.query(
+        `SELECT m.id_movimiento AS id, m.referencia AS reference, m.notas AS notes,
+          m.cantidad AS quantity, m.fecha_recepcion AS "receivedAt",
+          p.nombre AS product, p.marca AS brand, u.nombre_comercial AS supplier,
+          account.correo AS "supplierEmail"
+         FROM movimientos_inventario m
+         JOIN productos p ON p.id_producto=m.id_producto
+         JOIN proveedores u ON u.id_proveedor=m.id_proveedor
+         JOIN usuarios account ON account.id_usuario=u.id_usuario
+         ORDER BY m.fecha_recepcion DESC, m.id_movimiento DESC LIMIT 100`
+      )
     ]);
     const products = productResult.rows.map((product, index) => ({
       ...product,
@@ -756,7 +1025,8 @@ app.get('/api/admin/summary', requireAdmin, async (req, res) => {
       },
       products,
       orders,
-      customers: customerResult.rows
+      customers: customerResult.rows,
+      receipts: receiptResult.rows
     });
   } catch (error) {
     console.error('Admin summary query failed:', error.code || error.message);
@@ -881,6 +1151,98 @@ app.put('/api/admin/orders/:id/status', requireAdmin, async (req, res) => {
     if (client) await client.query('ROLLBACK').catch(() => {});
     console.error('Order status update failed:', error.code || error.message);
     sendError(res, 500, 'No fue posible actualizar el pedido.');
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.get('/api/supplier/summary', requireSupplier, async (req, res) => {
+  try {
+    const [productResult, movementResult] = await Promise.all([
+      pool.query(
+        `SELECT id_producto AS id, nombre AS name, marca AS brand, stock
+         FROM productos WHERE activo=TRUE ORDER BY nombre`
+      ),
+      pool.query(
+        `SELECT m.id_movimiento AS id, m.referencia AS reference, m.notas AS notes,
+          m.cantidad AS quantity, m.fecha_recepcion AS "receivedAt",
+          p.id_producto AS "productId", p.nombre AS product, p.marca AS brand
+         FROM movimientos_inventario m
+         JOIN productos p ON p.id_producto=m.id_producto
+         WHERE m.id_proveedor=$1
+         ORDER BY m.fecha_recepcion DESC, m.id_movimiento DESC LIMIT 100`,
+        [req.supplier.supplierId]
+      )
+    ]);
+    res.json({
+      supplier: { name: req.supplier.name, email: req.supplier.email },
+      products: productResult.rows,
+      receipts: movementResult.rows
+    });
+  } catch (error) {
+    console.error('Supplier dashboard query failed:', error.code || error.message);
+    sendError(res, 500, 'No fue posible cargar el panel del proveedor.');
+  }
+});
+
+app.post('/api/supplier/receipts', requireSupplier, async (req, res) => {
+  const items = req.body?.items;
+  const reference = clean(req.body?.reference, 100) || `REC-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  const notes = clean(req.body?.notes, 500);
+  if (!Array.isArray(items) || items.length < 1 || items.length > 50 ||
+      items.some(item => !Number.isInteger(Number(item.productId)) || Number(item.productId) < 1 ||
+        !Number.isInteger(Number(item.quantity)) || Number(item.quantity) < 1 || Number(item.quantity) > 10000) ||
+      new Set(items.map(item => Number(item.productId))).size !== items.length) {
+    return sendError(res, 400, 'Indica productos válidos y una cantidad positiva para cada uno.');
+  }
+  const orderedItems = [...items].map(item => ({
+    productId: Number(item.productId),
+    quantity: Number(item.quantity)
+  })).sort((a, b) => a.productId - b.productId);
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const supplierResult = await client.query(
+      'SELECT id_proveedor FROM proveedores WHERE id_proveedor=$1 AND activo=TRUE FOR UPDATE',
+      [req.supplier.supplierId]
+    );
+    if (!supplierResult.rows[0]) {
+      await client.query('ROLLBACK');
+      return sendError(res, 403, 'La cuenta de proveedor está desactivada.');
+    }
+    const received = [];
+    for (const item of orderedItems) {
+      const productResult = await client.query(
+        'SELECT nombre FROM productos WHERE id_producto=$1 AND activo=TRUE FOR UPDATE',
+        [item.productId]
+      );
+      if (!productResult.rows[0]) {
+        await client.query('ROLLBACK');
+        return sendError(res, 404, `El producto ${item.productId} no existe o no está activo.`);
+      }
+      const stockResult = await client.query(
+        'UPDATE productos SET stock=stock+$1 WHERE id_producto=$2 RETURNING stock',
+        [item.quantity, item.productId]
+      );
+      await client.query(
+        `INSERT INTO movimientos_inventario (id_proveedor,id_producto,cantidad,referencia,notas)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [req.supplier.supplierId, item.productId, item.quantity, reference, notes || null]
+      );
+      received.push({
+        productId: item.productId,
+        product: productResult.rows[0].nombre,
+        quantity: item.quantity,
+        stock: stockResult.rows[0].stock
+      });
+    }
+    await client.query('COMMIT');
+    res.status(201).json({ reference, received, message: 'Recepción registrada y existencias actualizadas.' });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    console.error('Inventory receipt failed:', error.code || error.message);
+    sendError(res, 500, 'No fue posible registrar la recepción del inventario.');
   } finally {
     if (client) client.release();
   }
@@ -1134,6 +1496,7 @@ async function start() {
   if (!adminPassword) missing.push('ADMIN_PASSWORD');
   if (missing.length) throw new Error(`Falta configurar: ${missing.join(', ')}.`);
   await pool.query('SELECT 1');
+  await provisionSupplierAccount();
   app.listen(port, () => {
     console.log(`Less Perfum disponible en ${appUrl}`);
     const timer = setInterval(expireOrderReservations, 60 * 1000);
