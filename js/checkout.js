@@ -92,9 +92,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const cartResponse = await fetch('/api/cart');
-    if (!cartResponse.ok) throw new Error('No fue posible cargar el carrito.');
-    cart = await cartResponse.json();
+    const accountResponse = await fetch('/api/account/summary');
+    const accountData = await accountResponse.json();
+    if (!accountResponse.ok) throw new Error(accountData.error || 'No fue posible cargar tus datos.');
+    document.getElementById('phone').value = accountData.customer.phone || '';
+    document.getElementById('address').value = accountData.customer.address || '';
+    document.getElementById('city').value = accountData.customer.city || '';
+    cart = accountData.cart.map(item => ({ ...item, qty: item.quantity }));
     renderCartSummary();
   } catch (error) {
     showToast(error.message);

@@ -92,6 +92,10 @@ function isValidCity(value) {
     !/(\p{L})\1{3,}/iu.test(value);
 }
 
+function isValidAddress(value) {
+  return value.length >= 8 && value.length <= 255 && !/(\p{L})\1{3,}/iu.test(value);
+}
+
 function invoicePdf(invoice) {
   return new Promise((resolve, reject) => {
     const document = new PDFDocument({ size: 'A4', margin: 48, info: { Title: `Factura Less Perfum ${invoice.id}` } });
@@ -1066,6 +1070,27 @@ app.get('/api/account/summary', requireCustomer, requireCart, async (req, res) =
   }
 });
 
+app.put('/api/account/address', requireCustomer, async (req, res) => {
+  const address = typeof req.body?.address === 'string' ? req.body.address.trim().replace(/\s+/g, ' ') : '';
+  const city = typeof req.body?.city === 'string' ? req.body.city.trim().replace(/\s+/g, ' ') : '';
+  if (!isValidAddress(address) || !isValidCity(city)) {
+    return sendError(res, 400, 'Ingresa una dirección completa y una ciudad válida.');
+  }
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO clientes (id_usuario,direccion,ciudad)
+       VALUES ($1,$2,$3)
+       ON CONFLICT (id_usuario) DO UPDATE SET direccion=EXCLUDED.direccion, ciudad=EXCLUDED.ciudad
+       RETURNING direccion AS address, ciudad AS city`,
+      [req.customer.id, address, city]
+    );
+    res.json({ ...rows[0], message: 'Dirección guardada correctamente.' });
+  } catch (error) {
+    console.error('Customer address update failed:', error.code || error.message);
+    sendError(res, 500, 'No fue posible guardar tu dirección.');
+  }
+});
+
 app.get('/api/admin/session', (req, res) => {
   const user = getUser(req);
   if (!user || user.role !== 'admin') return res.json({ authenticated: false });
@@ -1425,8 +1450,7 @@ app.post('/api/orders', requireCustomer, requireCart, paymentLimiter, async (req
   const phone = typeof rawPhone === 'string' ? rawPhone.trim() : '';
   const address = typeof req.body?.address === 'string' ? req.body.address.trim().replace(/\s+/g, ' ') : '';
   const city = typeof req.body?.city === 'string' ? req.body.city.trim().replace(/\s+/g, ' ') : '';
-  if (typeof rawPhone !== 'string' || rawPhone.length > 30 || !isValidPhone(phone) || address.length < 8 || address.length > 255 ||
-      /(\p{L})\1{3,}/iu.test(address) || !isValidCity(city)) {
+  if (typeof rawPhone !== 'string' || rawPhone.length > 30 || !isValidPhone(phone) || !isValidAddress(address) || !isValidCity(city)) {
     return sendError(res, 400, 'Ingresa un teléfono válido, una dirección completa y una ciudad válida.');
   }
 

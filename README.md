@@ -67,13 +67,14 @@ Inicia sesión con `ADMIN_EMAIL` y `ADMIN_PASSWORD` para abrir `admin.html`. El 
 
 ## Perfil del cliente
 
-Después de iniciar sesión, el cliente llega a `account.html`, donde ve sus datos, carrito persistente y compras anteriores. En cada pedido pagado puede descargar la factura de compra en PDF; el servidor comprueba la sesión y la propiedad del pedido antes de generarla. Puede regresar a la tienda o continuar al checkout sin volver a iniciar sesión. La cuenta y los pedidos se validan en el servidor.
+Después de iniciar sesión, el cliente llega a `account.html`, donde ve sus datos, carrito persistente y compras anteriores. Puede guardar su dirección de envío desde el perfil; esta se carga automáticamente en el siguiente checkout y puede editarse antes de pagar. En cada pedido pagado puede descargar la factura de compra en PDF; el servidor comprueba la sesión y la propiedad del pedido antes de generarla. Puede regresar a la tienda o continuar al checkout sin volver a iniciar sesión. La cuenta y los pedidos se validan en el servidor.
 
 ## API principal
 
 - `GET /api/health`, `GET /api/products`, `GET /api/perfume-images`
 - `GET /api/auth/captcha/config`, `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/google`, `GET /api/auth/session`
 - `GET /api/account/summary` (requiere sesión de cliente; perfil, carrito y compras)
+- `PUT /api/account/address` (requiere sesión de cliente; guarda dirección de envío)
 - `GET /api/cart`, `PUT /api/cart`
 - `POST /api/orders` (requiere sesión de cliente y crea el checkout Wompi)
 - `GET /api/orders/:id/invoice` (requiere sesión del propietario y pago confirmado; descarga la factura PDF)

@@ -1,12 +1,27 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const feedback = document.getElementById('pageFeedback');
-  const money = value => '$' + Number(value || 0).toLocaleString('es-CO');
+  const money = value => '\$' + Number(value || 0).toLocaleString('es-CO');
 
+  // Función helper para peticiones HTTP
   async function request(url, options = {}) {
     const response = await fetch(url, { credentials: 'same-origin', ...options });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'No fue posible cargar tu cuenta.');
+    if (!response.ok) throw new Error(data.error || 'No fue posible completar la solicitud.');
     return data;
+  }
+
+  const logoutButton = document.getElementById('logoutButton');
+  if (logoutButton) {
+    logoutButton.addEventListener('click', async () => {
+      logoutButton.disabled = true;
+      try {
+        await request('/api/auth/logout', { method: 'POST' });
+        window.location.replace('index.html');
+      } catch (error) {
+        if (feedback) feedback.textContent = error.message;
+        logoutButton.disabled = false;
+      }
+    });
   }
 
   function showEmpty(container, message) {
@@ -18,12 +33,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderCart(items) {
     const container = document.getElementById('cartItems');
+    if (!container) return;
     container.replaceChildren();
+    
     if (!items.length) {
       showEmpty(container, 'Tu carrito está vacío. Explora la tienda y agrega tus fragancias favoritas.');
-      document.getElementById('cartTotal').textContent = money(0);
+      const cartTotal = document.getElementById('cartTotal');
+      if (cartTotal) cartTotal.textContent = money(0);
       return;
     }
+    
     let total = 0;
     items.forEach(item => {
       const row = document.createElement('div');
@@ -41,16 +60,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       row.append(details, price);
       container.appendChild(row);
     });
-    document.getElementById('cartTotal').textContent = money(total);
+    
+    const cartTotal = document.getElementById('cartTotal');
+    if (cartTotal) cartTotal.textContent = money(total);
   }
 
   function renderOrders(orders) {
     const container = document.getElementById('orderList');
+    if (!container) return;
     container.replaceChildren();
+    
     if (!orders.length) {
       showEmpty(container, 'Aún no tienes compras. Cuando completes un pedido, aparecerá aquí.');
       return;
     }
+    
     orders.forEach(order => {
       const card = document.createElement('article');
       card.className = 'order-item';
@@ -70,6 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       total.className = 'order-total';
       total.textContent = `Total: ${money(order.total)}`;
       card.append(header, date, contents, total);
+      
       if (order.paymentStatus === 'Pagado') {
         const invoice = document.createElement('a');
         invoice.className = 'button-link invoice-link';
@@ -82,32 +107,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  try {
-    const data = await request('/api/account/summary');
-    const customer = data.customer;
-    document.getElementById('customerName').textContent = customer.name || 'cliente';
-    document.getElementById('customerEmail').textContent = customer.email;
-    document.getElementById('profileName').textContent = `${customer.name} ${customer.surname}`.trim();
-    document.getElementById('profileEmail').textContent = customer.email;
-    document.getElementById('profilePhone').textContent = customer.phone || 'Sin registrar';
-    document.getElementById('profileAddress').textContent =
-      [customer.address, customer.city].filter(Boolean).join(', ') || 'Sin registrar';
-    renderCart(data.cart);
-    renderOrders(data.orders);
-  } catch (error) {
-    if (error.message.includes('Inicia sesión')) {
-      window.location.replace('formularios/login.html?redirect=account');
-      return;
+  const customerNameEl = document.getElementById('customerName');
+  if (customerNameEl) {
+    try {
+      const data = await request('/api/account/summary');
+      const customer = data.customer;
+
+      customerNameEl.textContent = customer.name || 'cliente';
+      
+      const profileEmail = document.getElementById('profileEmail');
+      if (profileEmail) profileEmail.textContent = customer.email;
+      
+      const customerEmail = document.getElementById('customerEmail');
+      if (customerEmail) customerEmail.textContent = customer.email;
+
+      const profileName = document.getElementById('profileName');
+      if (profileName) profileName.textContent = `${customer.name || ''} ${customer.surname || ''}`.trim();
+
+      const profilePhone = document.getElementById('profilePhone');
+      if (profilePhone) profilePhone.textContent = customer.phone || 'Sin registrar';
+
+      const profileAddress = document.getElementById('profileAddress');
+      if (profileAddress) {
+        profileAddress.textContent = [customer.address, customer.city].filter(Boolean).join(', ') || 'Sin registrar';
+      }
+
+      const addressButton = document.getElementById('addAddressButton');
+      if (addressButton) {
+        addressButton.addEventListener('click', () => {
+          window.location.href = 'formularios/address.html';
+        });
+      }
+
+      renderCart(data.cart || []);
+      renderOrders(data.orders || []);
+    } catch (error) {
+      if (error.message.includes('Inicia sesión')) {
+        window.location.replace('formularios/login.html?redirect=account');
+        return;
+      }
+      if (feedback) feedback.textContent = error.message;
     }
-    feedback.textContent = error.message;
   }
 
-  document.getElementById('logoutButton').addEventListener('click', async () => {
-    try {
-      await request('/api/auth/logout', { method: 'POST' });
-      window.location.replace('index.html');
-    } catch (error) {
-      feedback.textContent = error.message;
-    }
-  });
 });

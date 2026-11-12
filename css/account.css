@@ -58,6 +58,7 @@ h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; lette
 .order-total { font-weight: 700; }
 .invoice-link { display: inline-block; margin-top: 12px; }
 footer { color: #99958a; font-size: 11px; text-align: center; }
+#addAddressButton { margin-left: 8px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; color: #625f57; background: white; font-size: 11px; }
 @media (max-width: 720px) {
   .account-shell { width: calc(100% - 24px); }
   .account-grid { grid-template-columns: 1fr; gap: 0; }
