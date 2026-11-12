@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/address.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  <title>Agregar Dirección</title>
+</head>
+<body>
+  <div class="split-visual">
+    <div class="visual-overlay"></div>
+    <div class="visual-content">
+      <a href="../index.html" class="brand-logo">Less <span>Perfum</span></a>
+      <blockquote class="visual-quote">Agrega tu dirección para recibir tus pedidos.</blockquote>
+    </div>
+  </div>
+
+  <div class="split-form">
+    <div class="form-container">
+      <div class="form-header">
+        <p class="form-header">Dirección</p>
+        <h1 class="form-title">Agregar nueva dirección</h1>
+        <p class="form-sub">Completa los campos para registrar tu dirección de envío.</p>
+      </div>
+
+      <form class="auth-form" id="addressForm" novalidate>
+        <div class="field-group">
+          <label for="address">Dirección</label>
+          <input type="text" id="address" name="address" autocomplete="street-address" maxlength="255" placeholder="Calle, número, etc." required>
+        </div>
+
+        <div class="field-group">
+          <label for="city">Ciudad</label>
+          <input type="text" id="city" name="city" autocomplete="address-level2" maxlength="80" placeholder="Ciudad" required>
+        </div>
+
+        <p id="addressFeedback" class="feedback" role="status" aria-live="polite"></p>
+        <button type="submit" class="btn-primary">
+          <span class="btn-text">Guardar dirección</span>
+          <i class="bi bi-arrow-right btn-arrow"></i>
+        </button>
+
+        <p class="form-sub" style="text-align:center;margin-top:1.2rem;">¿Deseas regresar? <a href="../account.html">Volver a mi perfil</a></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/address.js"></script>
+</body>
+</html>

@@ -42,6 +42,7 @@ Todos los endpoints siguientes son rutas propias del servidor Express (no creden
 | `GET` | `/api/auth/session` | Consulta la sesión actual. |
 | `POST` | `/api/auth/logout` | Cierra la sesión. |
 | `GET` | `/api/account/summary` | Recupera datos del perfil, carrito y compras del cliente autenticado. |
+| `PUT` | `/api/account/address` | Guarda la dirección y ciudad del cliente autenticado para el perfil y próximos checkouts. |
 
 ### Proveedor
 

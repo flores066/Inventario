@@ -1,0 +1,288 @@
+:root {
+  --bg-dark: #0f0f0f;
+  --bg-light: #faf8f5;
+  --gold: #c5a059;
+  --gold-hover: #b08c46;
+  --text-main: #1a1a1a;
+  --muted: #666666;
+  --line: #e2e2e2;
+  --error: #a7473d;
+  --success: #3d7a47;
+  
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-sans: 'Jost', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-light);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ==========================================
+   Sección Visual (Lado Izquierdo)
+   ========================================== */
+.split-visual {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3rem;
+  overflow: hidden;
+}
+
+/* Fondo decorativo opcional */
+.visual-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--dark);
+  pointer-events: none;
+}
+
+.visual-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.brand-logo {
+  font-family: var(--font-serif);
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: 1px;
+}
+
+.brand-logo span {
+  color: var(--gold);
+  font-style: italic;
+}
+
+.visual-quote {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-style: italic;
+  font-weight: 300;
+  color: #e5e5e5;
+  line-height: 1.4;
+  max-width: 420px;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+/* ==========================================
+   Sección Formulario (Lado Derecho)
+   ========================================== */
+.split-form {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 2rem;
+  background-color: #ffffff;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+.form-header {
+  margin-bottom: 2rem;
+}
+
+p.form-header {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.form-title {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.form-sub {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.form-sub a {
+  color: var(--text-main);
+  font-weight: 500;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.form-sub a:hover {
+  color: var(--gold);
+}
+
+/* ==========================================
+   Campos y Formulario
+   ========================================== */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-group label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.field-group input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  background-color: #fafafa;
+  transition: all 0.2s ease;
+}
+
+.field-group input:focus {
+  border-color: var(--gold);
+  background-color: #ffffff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.15);
+}
+
+/* Validaciones dinámicas (se activan solo cuando el campo ha sido tocado o enviado) */
+.auth-form.was-validated .field-group input:invalid {
+  border-color: var(--error);
+}
+
+.auth-form.was-validated .field-group input:valid {
+  border-color: var(--success);
+}
+
+/* ==========================================
+   Botón Principal
+   ========================================== */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.9rem;
+  margin-top: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--gold);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--gold-hover);
+}
+
+.btn-primary:active {
+  transform: scale(0.99);
+}
+
+.btn-arrow {
+  font-size: 1.1rem;
+  transition: transform 0.2s ease;
+}
+
+.btn-primary:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+/* ==========================================
+   Estados de Mensajes / Feedback
+   ========================================== */
+.auth-form .feedback,
+.auth-form .error {
+  min-height: 18px;
+  color: var(--error);
+  font-size: 0.85rem;
+}
+
+.auth-form .success {
+  min-height: 18px;
+  color: var(--success);
+  font-size: 0.85rem;
+}
+
+.auth-form .loading {
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.auth-form .loading::after {
+  content: '...';
+  animation: loadingDots 1s infinite;
+}
+
+@keyframes loadingDots {
+  0% { content: ''; }
+  33% { content: '.'; }
+  66% { content: '..'; }
+  100% { content: '...'; }
+}
+
+/* ==========================================
+   Diseño Responsivo (Móviles y Tablets)
+   ========================================== */
+@media (max-width: 768px) {
+  body {
+    flex-direction: column;
+  }
+
+  .split-visual {
+    padding: 2rem 1.5rem;
+    min-height: 180px;
+  }
+
+  .visual-quote {
+    font-size: 1.4rem;
+    margin-top: 1.5rem;
+  }
+
+  .split-form {
+    padding: 2.5rem 1.5rem;
+  }
+}
