@@ -7,7 +7,7 @@
 
 ## Configuración
 
-Desde la carpeta `inventario`, instala dependencias y crea la configuración local:
+Desde la raíz del proyecto, instala dependencias y crea la configuración local:
 
 ```powershell
 npm install
@@ -20,7 +20,7 @@ Crea la base y carga el esquema PostgreSQL una sola vez:
 
 ```powershell
 createdb -U postgres less_perfums
-psql -U postgres -d less_perfums -f database/data.sql
+psql -U postgres -d less_perfums -f backend/database/data.sql
 ```
 
 ## Ejecutar

@@ -2,11 +2,11 @@
   "name": "less-perfum",
   "version": "1.0.0",
   "private": true,
-  "description": "Backend de Less Perfum",
-  "main": "server.js",
+  "description": "Aplicación de comercio electrónico Less Perfum",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

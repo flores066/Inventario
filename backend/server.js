@@ -1,5 +1,5 @@
-require('dotenv').config();
 const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcrypt');
@@ -13,7 +13,7 @@ const PDFDocument = require('pdfkit');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const publicRoot = __dirname;
+const publicRoot = path.resolve(__dirname, '../frontend');
 const jwtSecret = process.env.JWT_SECRET;
 const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 const adminPassword = process.env.ADMIN_PASSWORD || '';

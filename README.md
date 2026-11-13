@@ -8,6 +8,13 @@ Tienda de fragancias con Express y una única base PostgreSQL persistente. El ca
 - PostgreSQL 14 o posterior.
 - Credenciales de Cloudflare Turnstile para proteger registros en producción; credenciales de Google y Wompi para habilitar inicio social y cobros reales.
 
+## Estructura del proyecto
+
+- `frontend/`: páginas HTML, formularios, hojas de estilo compartidas en `frontend/css/`, scripts en `frontend/js/` y recursos estáticos en `frontend/assets/`.
+- `backend/`: servidor Express en `backend/server.js` y esquema PostgreSQL en `backend/database/data.sql`.
+- `.env`: configuración local en la raíz; no se publica ni se guarda en Git.
+- `package.json`: dependencias y comandos para ejecutar el backend desde la raíz.
+
 ## Instalación local
 
 Desde esta carpeta:
@@ -21,7 +28,7 @@ Crea la base de datos y ejecuta el único esquema:
 
 ```powershell
 createdb -U postgres less_perfums
-psql -U postgres -d less_perfums -f database/data.sql
+psql -U postgres -d less_perfums -f backend/database/data.sql
 ```
 
 Configura en `.env` la conexión de PostgreSQL, una clave `JWT_SECRET` aleatoria, `ADMIN_EMAIL` y `ADMIN_PASSWORD`. El servidor crea la cuenta interna del proveedor usando `SUPPLIER_EMAIL` y `SUPPLIER_PASSWORD`; la contraseña debe tener al menos 8 caracteres. En desarrollo, si se omiten las variables Turnstile, el registro usa las llaves de prueba oficiales. En producción, configura `TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` de tu sitio antes de iniciar.
@@ -30,7 +37,7 @@ Configura en `.env` la conexión de PostgreSQL, una clave `JWT_SECRET` aleatoria
 npm start
 ```
 
-Abre `http://localhost:3000`. No se debe abrir el HTML directamente desde el disco: las páginas usan la API del servidor.
+Abre `http://localhost:3000`. Express sirve el frontend desde `frontend/` y las rutas `/api/*` desde el backend. No se debe abrir el HTML directamente desde el disco: las páginas usan la API del servidor.
 
 ## CAPTCHA para registro
 
