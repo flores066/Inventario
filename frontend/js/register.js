@@ -1,11 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('registerForm');
+  const verificationForm = document.getElementById('verificationForm');
   const feedback = document.getElementById('registerFeedback');
+  const verificationFeedback = document.getElementById('verificationFeedback');
   const params = new URLSearchParams(window.location.search);
   let googleCsrfToken = '';
   let googleOnly = false;
   let captchaToken = '';
   let captchaWidgetId = null;
+  let verificationEmail = '';
 
   function setFeedback(element, message, type = '') {
     element.textContent = message;
@@ -23,6 +26,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function redirectTarget() {
     return params.get('redirect') === 'checkout' ? '../checkout.html' : '../account.html';
+  }
+
+  function showVerification(email, message, type = '') {
+    verificationEmail = email.trim().toLowerCase();
+    document.getElementById('verificationEmail').textContent = verificationEmail;
+    form.hidden = true;
+    verificationForm.hidden = false;
+    document.querySelector('.form-label').textContent = 'Un paso más';
+    document.querySelector('.form-title').textContent = 'Verifica tu correo';
+    document.querySelector('.divider').hidden = true;
+    document.querySelector('.social-btns').hidden = true;
+    const loginLink = document.querySelector('.form-sub a');
+    if (loginLink) {
+      loginLink.href = 'login.html';
+      loginLink.textContent = 'Inicia sesión';
+    }
+    if (message) setFeedback(verificationFeedback, message, type);
+    document.getElementById('verificationCode').focus();
   }
 
   function makeToggle(buttonId, inputId, iconId) {
@@ -226,7 +247,17 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       });
       const data = await readApiResponse(response);
-      if (!response.ok) throw new Error(data.error || 'No fue posible crear la cuenta.');
+      if (!response.ok) {
+        if (data.verificationRequired) {
+          showVerification(data.email || email.value, data.error || 'Puedes solicitar otro código.', 'error');
+          return;
+        }
+        throw new Error(data.error || 'No fue posible crear la cuenta.');
+      }
+      if (data.verificationRequired) {
+        showVerification(data.email || email.value, data.message);
+        return;
+      }
       setFeedback(feedback, 'Cuenta creada e inicio de sesión exitoso. Redirigiendo…', 'success');
       window.setTimeout(() => { window.location.href = redirectTarget(); }, 900);
     } catch (error) {
@@ -237,6 +268,56 @@ document.addEventListener('DOMContentLoaded', () => {
       button.disabled = false;
       button.classList.remove('loading');
       button.querySelector('.btn-text').textContent = 'Crear mi cuenta';
+    }
+  });
+
+  verificationForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const code = document.getElementById('verificationCode').value.trim();
+    const codeError = document.getElementById('verificationCodeErr');
+    const button = document.getElementById('verifyEmailBtn');
+    codeError.textContent = '';
+    setFeedback(verificationFeedback, '');
+    if (!/^\d{6}$/.test(code)) {
+      codeError.textContent = 'Ingresa el código de 6 dígitos.';
+      return;
+    }
+    button.disabled = true;
+    button.querySelector('.btn-text').textContent = 'Verificando…';
+    try {
+      const response = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verificationEmail, code })
+      });
+      const data = await readApiResponse(response);
+      if (!response.ok) throw new Error(data.error || 'No fue posible verificar el correo.');
+      setFeedback(verificationFeedback, 'Correo verificado. Redirigiendo…', 'success');
+      window.setTimeout(() => { window.location.href = redirectTarget(); }, 900);
+    } catch (error) {
+      setFeedback(verificationFeedback, error.message, 'error');
+    } finally {
+      button.disabled = false;
+      button.querySelector('.btn-text').textContent = 'Verificar correo';
+    }
+  });
+
+  document.getElementById('resendVerificationCode').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      const response = await fetch('/api/auth/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verificationEmail })
+      });
+      const data = await readApiResponse(response);
+      if (!response.ok) throw new Error(data.error || 'No fue posible reenviar el código.');
+      setFeedback(verificationFeedback, data.message, 'success');
+    } catch (error) {
+      setFeedback(verificationFeedback, error.message, 'error');
+    } finally {
+      button.disabled = false;
     }
   });
 
@@ -260,11 +341,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const loginLink = document.querySelector('.form-sub a');
-  if (params.get('redirect') === 'checkout') loginLink.href = 'login.html?redirect=checkout';
+  if (loginLink && params.get('redirect') === 'checkout') loginLink.href = 'login.html?redirect=checkout';
   if (params.get('email') && params.get('google') !== '1') {
     document.getElementById('email').value = params.get('email');
   }
   initializeGoogleRegistration().catch(error => setFeedback(feedback, error.message, 'error'));
-  setupCaptcha();
-  setupGoogleButton();
+  if (params.get('verify') === '1') {
+    const email = params.get('email') || '';
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showVerification(email, 'Ingresa el código que enviamos a tu correo.');
+    } else {
+      setFeedback(feedback, 'Ingresa un correo válido para verificar tu cuenta.', 'error');
+    }
+  }
+  if (params.get('verify') !== '1') {
+    setupCaptcha();
+    setupGoogleButton();
+  }
 });

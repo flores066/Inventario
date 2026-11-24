@@ -9,7 +9,7 @@ Este documento describe lo que está conectado en el código y lo que aún requi
 | PostgreSQL | Usuarios/clientes, catálogo, carritos, pedidos, pagos e inventario | Acceso del servidor mediante `pg` | Sí: `DATABASE_URL` |
 | Google Identity Services | Inicio y registro con cuenta Google; se valida el ID token en el servidor | Integrado | Sí: `GOOGLE_CLIENT_ID` |
 | Cloudflare Turnstile | CAPTCHA para el registro tradicional y el registro completado desde Google | Verificación server-side con Siteverify; llaves oficiales de prueba solo en desarrollo | Sí en producción: `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` |
-| Gmail API | Envío de mensajes mediante rutas heredadas de verificación | Código heredado; ya no es necesario para registrar o activar clientes | Sí, solo si se usan esas rutas heredadas |
+| Gmail API OAuth 2.0 | Envío de códigos de verificación, confirmaciones de registro y avisos de inicio de sesión | Integrado con el permiso `gmail.send`; todas las credenciales se leen de `.env` | Sí: variables `GOOGLE_*` y `GMAIL_*` |
 | Wompi Colombia | Checkout alojado y confirmación de transacciones por webhook | Integrado; cobros reales no confirmados | Sí: llaves y secretos de Wompi |
 | Unsplash CDN | Imágenes de perfumes de respaldo en el catálogo, carrito y páginas públicas | Integrado mediante enlaces HTTPS verificados; no es una API de búsqueda aleatoria ni requiere clave | No |
 
@@ -32,9 +32,10 @@ Todos los endpoints siguientes son rutas propias del servidor Express (no creden
 
 | Método | Ruta | Uso |
 |---|---|---|
-| `POST` | `/api/auth/register` | Valida nombre, apellido, teléfono y correo; verifica Turnstile, crea un cliente activo e inicia sesión. |
-| `POST` | `/api/auth/resend-code`, `/api/auth/verify-email` | Rutas heredadas para códigos de cuentas antiguas; no se usan en el nuevo registro. |
-| `POST` | `/api/auth/login` | Inicio con correo/contraseña de cliente, proveedor o administrador. |
+| `POST` | `/api/auth/register` | Valida datos y Turnstile, crea una cuenta pendiente y envía el código de verificación por correo. |
+| `POST` | `/api/auth/resend-code` | Envía un nuevo código a una cuenta pendiente. |
+| `POST` | `/api/auth/verify-email` | Valida el código, activa la cuenta e inicia sesión. |
+| `POST` | `/api/auth/login` | Inicio con correo/contraseña de cliente, proveedor o administrador; envía aviso de seguridad al correo de la cuenta. |
 | `GET` | `/api/auth/google/config` | Devuelve el Client ID público y token CSRF para iniciar el flujo de Google. |
 | `POST` | `/api/auth/google` | Valida la credencial Google; inicia sesión si la cuenta existe o inicia el registro. |
 | `GET` | `/api/auth/google/pending` | Consulta el perfil temporal pendiente del registro Google. |
@@ -95,14 +96,16 @@ Crear `inventario/.env` a partir de `inventario/.env.example` y sustituir todos 
 | `GOOGLE_CLIENT_SECRET` | Credencial OAuth del proyecto Google Cloud | Sí |
 | `TURNSTILE_SITE_KEY` | Panel de Cloudflare Turnstile; clave pública del widget | No |
 | `TURNSTILE_SECRET_KEY` | Panel de Cloudflare Turnstile; clave secreta para Siteverify | Sí |
-| `GMAIL_REFRESH_TOKEN` | Flujo OAuth autorizado para enviar correo con permiso `https://www.googleapis.com/auth/gmail.send` | Sí |
-| `GMAIL_SENDER` | Dirección remitente autorizada para Gmail API | No es una contraseña |
+| `GMAIL_REFRESH_TOKEN` | Token de actualización OAuth autorizado para enviar correo con permiso `https://www.googleapis.com/auth/gmail.send` | Sí |
+| `GMAIL_SENDER` | Dirección Gmail asociada al token OAuth y usada como remitente | No es una contraseña |
 | `WOMPI_PUBLIC_KEY` | Panel de comercios Wompi; usar llave de pruebas en sandbox | Puede aparecer en el checkout; evitar publicarla fuera del sitio |
 | `WOMPI_INTEGRITY_SECRET` | Panel Wompi, secreto para firmar el checkout | Sí |
 | `WOMPI_EVENTS_SECRET` | Configuración de eventos/webhooks Wompi | Sí |
 | `WOMPI_ENV` | `sandbox` para pruebas o `production` para producción | No |
 | `WOMPI_REDIRECT_URL` | URL del sitio a la que Wompi regresa al comprador | No |
 | `APP_URL` | URL base pública/local de la aplicación | No |
+
+`GMAIL_REFRESH_TOKEN` debe generarse con el mismo `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`, el permiso `https://www.googleapis.com/auth/gmail.send` y la misma cuenta indicada en `GMAIL_SENDER`. Si Google devuelve `invalid_grant`, vuelve a autorizar la cuenta y reemplaza el token en `.env`; nunca lo pegues en el código ni en el repositorio. Los tokens de aplicaciones OAuth en modo de prueba pueden vencer después de siete días.
 
 ### Acceso del administrador
 

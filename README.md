@@ -24,14 +24,14 @@ npm install
 Copy-Item .env.example .env
 ```
 
-Crea la base de datos y ejecuta el único esquema:
+Crea la base de datos y ejecuta el esquema:
 
 ```powershell
 createdb -U postgres less_perfums
 psql -U postgres -d less_perfums -f backend/database/data.sql
 ```
 
-Configura en `.env` la conexión de PostgreSQL, una clave `JWT_SECRET` aleatoria, `ADMIN_EMAIL` y `ADMIN_PASSWORD`. El servidor crea la cuenta interna del proveedor usando `SUPPLIER_EMAIL` y `SUPPLIER_PASSWORD`; la contraseña debe tener al menos 8 caracteres. En desarrollo, si se omiten las variables Turnstile, el registro usa las llaves de prueba oficiales. En producción, configura `TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` de tu sitio antes de iniciar.
+Configura en `.env` la conexión de PostgreSQL, una clave `JWT_SECRET` aleatoria, `ADMIN_EMAIL` y `ADMIN_PASSWORD`. El servidor crea la cuenta interna del proveedor usando `SUPPLIER_EMAIL` y `SUPPLIER_PASSWORD`; la contraseña debe tener al menos 8 caracteres. Para correo, configura `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` y `GMAIL_SENDER` con la misma cuenta OAuth autorizada para el permiso `https://www.googleapis.com/auth/gmail.send`. Si Google responde `invalid_grant`, vuelve a autorizar y reemplaza el token de actualización en `.env`; en modo de prueba, Google puede vencerlo a los siete días. No uses ni guardes contraseñas de correo en el código. En desarrollo, si se omiten las variables Turnstile, el registro usa las llaves de prueba oficiales. En producción, configura `TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` de tu sitio antes de iniciar.
 
 ```powershell
 npm start
@@ -39,18 +39,20 @@ npm start
 
 Abre `http://localhost:3000`. Express sirve el frontend desde `frontend/` y las rutas `/api/*` desde el backend. No se debe abrir el HTML directamente desde el disco: las páginas usan la API del servidor.
 
-## CAPTCHA para registro
+## Verificación de correo y CAPTCHA
 
-El registro de clientes no envía ni requiere un código por correo. La página solicita un desafío Cloudflare Turnstile y el servidor valida su token con Siteverify antes de crear la cuenta. Las llaves de prueba integradas solo sirven para desarrollo local y no son protección contra bots.
+El registro tradicional deja la cuenta pendiente hasta que el usuario ingrese el código de seis dígitos enviado al correo. El código vence en 15 minutos y puede reenviarse desde la página de verificación. Al verificar, la cuenta inicia sesión y se envían mensajes de registro exitoso e inicio de sesión. Los inicios de sesión posteriores también envían un aviso de seguridad. Las cuentas creadas con Google usan el correo verificado por Google y reciben los mensajes de registro e inicio de sesión.
+
+La página también solicita un desafío Cloudflare Turnstile y el servidor valida su token con Siteverify antes de crear la cuenta. Las llaves de prueba integradas solo sirven para desarrollo local y no son protección contra bots.
 
 1. Crea un sitio en Cloudflare Turnstile e incluye tu dominio público; para probar localmente incluye `localhost` si vas a usar llaves reales.
 2. Copia la site key a `TURNSTILE_SITE_KEY` y la secret key a `TURNSTILE_SECRET_KEY`. Solo la site key se muestra en el navegador; nunca expongas el secreto.
-3. Reinicia y prueba el registro. `GET /api/auth/captcha/config` muestra la site key y el modo; los endpoints de registro verifican cada token desde el servidor y rechazan tokens faltantes, inválidos o vencidos.
-4. No publiques ni compartas `.env`. En producción la aplicación no usa llaves de prueba: si faltan las llaves reales, el CAPTCHA falla de forma cerrada.
+3. Configura las credenciales OAuth/Gmail indicadas arriba, reinicia y prueba el registro. `GET /api/auth/captcha/config` muestra la site key y el modo; el servidor valida cada token y el código de correo antes de activar la cuenta.
+4. No publiques ni compartas `.env`. En producción no se usan llaves Turnstile de prueba; si faltan las llaves reales, el CAPTCHA falla de forma cerrada.
 
 ## Google Identity Services (opcional)
 
-El inicio de sesión con Google sigue usando Google Identity Services y requiere `GOOGLE_CLIENT_ID`. Si el correo verificado no tiene cuenta, la persona termina su registro con el formulario y el CAPTCHA. Gmail API ya no es requisito para crear o activar cuentas. Las variables de Gmail pueden omitirse.
+El inicio de sesión con Google usa Google Identity Services y requiere `GOOGLE_CLIENT_ID`. Si el correo verificado no tiene cuenta, la persona termina su registro con el formulario y el CAPTCHA. Las mismas credenciales OAuth de Google se usan para enviar correos de verificación y avisos.
 
 ## Portal del proveedor
 
@@ -79,7 +81,7 @@ Después de iniciar sesión, el cliente llega a `account.html`, donde ve sus dat
 ## API principal
 
 - `GET /api/health`, `GET /api/products`, `GET /api/perfume-images`
-- `GET /api/auth/captcha/config`, `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/google`, `GET /api/auth/session`
+- `GET /api/auth/captcha/config`, `POST /api/auth/register`, `POST /api/auth/resend-code`, `POST /api/auth/verify-email`, `POST /api/auth/login`, `POST /api/auth/google`, `GET /api/auth/session`
 - `GET /api/account/summary` (requiere sesión de cliente; perfil, carrito y compras)
 - `PUT /api/account/address` (requiere sesión de cliente; guarda dirección de envío)
 - `GET /api/cart`, `PUT /api/cart`

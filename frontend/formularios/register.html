@@ -125,6 +125,24 @@
         </button>
       </form>
 
+      <form class="auth-form" id="verificationForm" hidden novalidate>
+        <p class="auth-feedback" id="verificationFeedback" role="status" aria-live="polite"></p>
+        <p>Enviamos un código de 6 dígitos a <strong id="verificationEmail"></strong>.</p>
+        <div class="field-group">
+          <label for="verificationCode">Código de verificación</label>
+          <div class="input-wrap">
+            <i class="bi bi-shield-lock input-icon"></i>
+            <input type="text" id="verificationCode" name="verificationCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required>
+          </div>
+          <span class="field-error" id="verificationCodeErr"></span>
+        </div>
+        <button type="submit" class="btn-primary" id="verifyEmailBtn">
+          <span class="btn-text">Verificar correo</span>
+          <i class="bi bi-arrow-right btn-arrow"></i>
+        </button>
+        <button type="button" class="resend-code" id="resendVerificationCode">Reenviar código</button>
+      </form>
+
       <div class="divider"><span>o continúa con</span></div>
       <div class="social-btns">
         <div class="google-button" id="googleButton" aria-label="Continuar con Google">Cargando Google…</div>

@@ -150,14 +150,6 @@ CREATE INDEX IF NOT EXISTS ordenes_fecha_creacion_idx ON ordenes (fecha_creacion
 CREATE INDEX IF NOT EXISTS ordenes_reserva_idx ON ordenes (reserva_hasta) WHERE stock_reservado = TRUE;
 CREATE INDEX IF NOT EXISTS productos_categoria_activo_idx ON productos (id_categoria, activo);
 
-UPDATE usuarios
-SET estado = 'Activo'
-WHERE estado = 'Inactivo'
-  AND rol = 'cliente'
-  AND id_usuario IN (SELECT id_usuario FROM codigos_verificacion);
-DELETE FROM codigos_verificacion
-WHERE id_usuario IN (SELECT id_usuario FROM usuarios WHERE rol = 'cliente' AND estado = 'Activo');
-
 INSERT INTO categorias (nombre, descripcion) VALUES
   ('mujer', 'Fragancias femeninas'),
   ('hombre', 'Fragancias masculinas'),

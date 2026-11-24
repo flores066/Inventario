@@ -464,7 +464,7 @@ body {
   .social-btns { grid-template-columns: 1fr; }
 }
 
-#registerForm[hidden], #verificationForm[hidden], .field-group[hidden] { display: none; }
+#registerForm[hidden], #verificationForm[hidden], .field-group[hidden], .divider[hidden], .social-btns[hidden] { display: none; }
 
 .auth-feedback {
   display: none;
@@ -490,4 +490,3 @@ body {
 .captcha-field small { color: var(--text-muted); font-size: .68rem; }
 .captcha-field[hidden] { display: none; }
 #captchaContainer { min-height: 65px; }
-#registerForm[hidden], .field-group[hidden] { display: none; }

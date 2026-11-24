@@ -10,6 +10,11 @@ const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
 const PDFDocument = require('pdfkit');
+const {
+  enviarCodigoVerificacion,
+  enviarCorreoRegistro,
+  enviarCorreoInicioSesion
+} = require('./mailer');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -36,7 +41,6 @@ const wompiEnvironment = process.env.WOMPI_ENV || 'sandbox';
 const appUrl = process.env.APP_URL || `http://localhost:${port}`;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const googleClient = new OAuth2Client(googleClientId, googleClientSecret);
-if (gmailRefreshToken) googleClient.setCredentials({ refresh_token: gmailRefreshToken });
 
 const cartCookie = 'less_perfum_cart_id';
 const authCookie = 'less_perfum_auth';
@@ -379,32 +383,51 @@ async function provisionSupplierAccount() {
   }
 }
 
-async function sendEmail(to, subject, body) {
-  ensureMailConfigured();
-  const { token } = await googleClient.getAccessToken();
-  if (!token) throw new Error('GMAIL_ACCESS_TOKEN_MISSING');
-  const encodedSubject = `=?UTF-8?B?${Buffer.from(subject, 'utf8').toString('base64')}?=`;
-  const raw = Buffer.from(
-    `From: ${gmailSender}\r\nTo: ${to}\r\nSubject: ${encodedSubject}\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n${body}`,
-    'utf8'
-  ).toString('base64url');
-  const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ raw })
-  });
-  if (!response.ok) {
-    console.error('Gmail API error:', response.status);
-    throw new Error('GMAIL_SEND_FAILED');
+function mailFailure(error) {
+  if (error.code === 'EMAIL_NOT_CONFIGURED') {
+    return {
+      status: 503,
+      message: 'El envío de correo no está configurado. Revisa las credenciales OAuth de Gmail en .env.'
+    };
   }
+  if (error.code === 'GMAIL_REFRESH_TOKEN_INVALID') {
+    return {
+      status: 503,
+      message: 'La autorización de Gmail venció o fue revocada. Renueva GMAIL_REFRESH_TOKEN en .env y reinicia el servidor.'
+    };
+  }
+  if (error.code === 'GOOGLE_OAUTH_CLIENT_INVALID') {
+    return {
+      status: 503,
+      message: 'Las credenciales OAuth de Google no son válidas. Revisa GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env.'
+    };
+  }
+  return {
+    status: 502,
+    message: 'No fue posible enviar el correo. Intenta reenviar el código o contacta con soporte.'
+  };
 }
 
 function mailError(res, error) {
-  if (error.code === 'EMAIL_NOT_CONFIGURED') {
-    return sendError(res, 503, 'El envío de correo no está configurado. Revisa las variables de Gmail API.');
-  }
   console.error('Email delivery failed:', error.code || error.message);
-  return sendError(res, 502, 'No fue posible enviar el correo. Intenta de nuevo o solicita otro código.');
+  const failure = mailFailure(error);
+  return res.status(failure.status).json({ error: failure.message });
+}
+
+async function notifySuccessfulRegistration(email, name) {
+  try {
+    await enviarCorreoRegistro(email, name);
+  } catch (error) {
+    console.error('Registration confirmation email failed:', error.code || error.message);
+  }
+}
+
+async function notifySuccessfulLogin(email, name) {
+  try {
+    await enviarCorreoInicioSesion(email, name);
+  } catch (error) {
+    console.error('Login notification email failed:', error.code || error.message);
+  }
 }
 
 function parseAdminProduct(body = {}) {
@@ -620,21 +643,30 @@ app.post('/api/auth/register', registrationLimiter, async (req, res) => {
     return captchaError(res, error);
   }
   try {
+    ensureMailConfigured();
+  } catch (error) {
+    return mailError(res, error);
+  }
+  try {
     const passwordHash = await bcrypt.hash(password, 12);
     const client = await pool.connect();
     let user;
-    let cartId;
+    const code = String(crypto.randomInt(100000, 1000000));
     try {
       await client.query('BEGIN');
       const { rows } = await client.query(
         `INSERT INTO usuarios (nombre, apellido, correo, telefono, contrasena, estado, rol, newsletter)
-         VALUES ($1,$2,$3,$4,$5,'Activo','cliente',$6)
+         VALUES ($1,$2,$3,$4,$5,'Inactivo','cliente',$6)
          RETURNING id_usuario, nombre, apellido, correo`,
         [firstName, lastName, email, phone || null, passwordHash, Boolean(body.newsletter)]
       );
       user = rows[0];
       await client.query('INSERT INTO clientes (id_usuario) VALUES ($1)', [user.id_usuario]);
-      cartId = await attachCartToUser(client, user.id_usuario, req.cookies[cartCookie]);
+      await client.query(
+        `INSERT INTO codigos_verificacion (id_usuario, codigo_hash, expira_en, intentos)
+         VALUES ($1,$2,CURRENT_TIMESTAMP + INTERVAL '15 minutes',0)`,
+        [user.id_usuario, verificationHash(code)]
+      );
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK');
@@ -642,12 +674,21 @@ app.post('/api/auth/register', registrationLimiter, async (req, res) => {
     } finally {
       client.release();
     }
-    setCustomerSession(res, user);
-    if (cartId && cartId !== req.cookies[cartCookie]) setCartCookie(res, cartId);
+    try {
+      await enviarCodigoVerificacion(email, code);
+    } catch (error) {
+      console.error('Verification email delivery failed:', error.code || error.message);
+      const failure = mailFailure(error);
+      return res.status(failure.status).json({
+        error: `La cuenta quedó pendiente. ${failure.message}`,
+        verificationRequired: true,
+        email
+      });
+    }
     res.status(201).json({
-      user: { name: `${user.nombre} ${user.apellido}`, email: user.correo },
-      role: 'customer',
-      message: 'Cuenta creada e inicio de sesión exitoso.'
+      verificationRequired: true,
+      email: user.correo,
+      message: 'Enviamos un código de verificación a tu correo.'
     });
   } catch (error) {
     if (error.code === '23505') return sendError(res, 409, 'Este correo ya está registrado.');
@@ -690,7 +731,7 @@ app.post('/api/auth/resend-code', codeLimiter, async (req, res) => {
     } finally {
       client.release();
     }
-    await sendEmail(email, 'Nuevo código Less Perfum', `Tu nuevo código de verificación es ${code}. Vence en 15 minutos.`);
+    await enviarCodigoVerificacion(email, code);
     res.json({ message: 'Enviamos un nuevo código de verificación.' });
   } catch (error) {
     if (error.code === 'EMAIL_NOT_CONFIGURED') return mailError(res, error);
@@ -733,6 +774,11 @@ app.post('/api/auth/verify-email', codeLimiter, async (req, res) => {
     await client.query('COMMIT');
     setCustomerSession(res, pending);
     if (cartId && cartId !== req.cookies[cartCookie]) setCartCookie(res, cartId);
+    const name = `${pending.nombre} ${pending.apellido}`.trim();
+    await Promise.all([
+      notifySuccessfulRegistration(pending.correo, name),
+      notifySuccessfulLogin(pending.correo, name)
+    ]);
     res.json({ user: { name: `${pending.nombre} ${pending.apellido}`, email: pending.correo }, message: 'Correo verificado e inicio de sesión exitoso.' });
   } catch (error) {
     if (client) await client.query('ROLLBACK').catch(() => {});
@@ -754,6 +800,7 @@ app.post('/api/auth/login', async (req, res) => {
     const validPassword = expected.length > 0 && supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
     if (!validPassword) return sendError(res, 401, 'Correo o contraseña incorrectos.');
     setSessionCookie(res, { id: 'admin', name: 'Administrador', email: adminEmail, role: 'admin' }, true);
+    await notifySuccessfulLogin(adminEmail, 'Administrador');
     return res.json({ user: { name: 'Administrador', email: adminEmail }, role: 'admin' });
   }
 
@@ -782,6 +829,7 @@ app.post('/api/auth/login', async (req, res) => {
       );
       if (!supplierRows[0]) return sendError(res, 403, 'La cuenta de proveedor está desactivada.');
       setSupplierSession(res, { ...account, nombre_comercial: supplierRows[0].nombre_comercial });
+      await notifySuccessfulLogin(account.correo, supplierRows[0].nombre_comercial);
       return res.json({
         user: { name: supplierRows[0].nombre_comercial, email: account.correo },
         role: 'supplier'
@@ -790,13 +838,16 @@ app.post('/api/auth/login', async (req, res) => {
     if (account.rol !== 'cliente') return sendError(res, 403, 'Esta cuenta no puede iniciar sesión desde aquí.');
     if (account.estado !== 'Activo') {
       const { rows: pendingRows } = await pool.query(
-        'SELECT 1 FROM codigos_verificacion WHERE id_usuario=$1 AND expira_en > CURRENT_TIMESTAMP',
+        'SELECT 1 FROM codigos_verificacion WHERE id_usuario=$1',
         [account.id_usuario]
       );
-      if (!pendingRows[0]) return sendError(res, 403, 'La cuenta está desactivada. Contacta con la tienda.');
-      await pool.query("UPDATE usuarios SET estado='Activo' WHERE id_usuario=$1", [account.id_usuario]);
-      await pool.query('DELETE FROM codigos_verificacion WHERE id_usuario=$1', [account.id_usuario]);
-      account.estado = 'Activo';
+      if (pendingRows[0]) {
+        return res.status(403).json({
+          error: 'Verifica tu correo antes de iniciar sesión.',
+          verificationRequired: true
+        });
+      }
+      return sendError(res, 403, 'La cuenta está desactivada. Contacta con la tienda.');
     }
     const client = await pool.connect();
     let cartId;
@@ -812,6 +863,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
     setCustomerSession(res, account);
     if (cartId && cartId !== req.cookies[cartCookie]) setCartCookie(res, cartId);
+    await notifySuccessfulLogin(account.correo, `${account.nombre} ${account.apellido}`.trim());
     res.json({
       user: { name: `${account.nombre} ${account.apellido}`, email: account.correo },
       role: 'customer'
@@ -887,6 +939,7 @@ app.post('/api/auth/google', async (req, res) => {
     }
     setCustomerSession(res, account);
     if (account.cartId && account.cartId !== req.cookies[cartCookie]) setCartCookie(res, account.cartId);
+    await notifySuccessfulLogin(account.correo, `${account.nombre} ${account.apellido}`.trim());
     res.json({ user: { name: `${account.nombre} ${account.apellido}`, email: account.correo } });
   } catch (error) {
     if (error.code === '23505') return sendError(res, 409, 'La cuenta de Google ya está asociada con otro usuario.');
@@ -944,6 +997,11 @@ app.post('/api/auth/google/register', async (req, res) => {
     setCustomerSession(res, user);
     if (cartId && cartId !== req.cookies[cartCookie]) setCartCookie(res, cartId);
     res.clearCookie(googlePendingCookie, { httpOnly: true, sameSite: 'lax', secure: secureCookies });
+    const name = `${user.nombre} ${user.apellido}`.trim();
+    await Promise.all([
+      notifySuccessfulRegistration(user.correo, name),
+      notifySuccessfulLogin(user.correo, name)
+    ]);
     res.status(201).json({
       user: { name: `${user.nombre} ${user.apellido}`, email: user.correo },
       role: 'customer',

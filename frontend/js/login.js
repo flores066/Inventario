@@ -99,6 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = registrationUrl.href;
         return;
       }
+      if (response.status === 403 && data.verificationRequired) {
+        resendButton.hidden = false;
+        throw new Error(data.error || 'Verifica tu correo antes de iniciar sesión.');
+      }
       if (!response.ok) throw new Error(data.error || 'No fue posible iniciar sesión.');
       completeSignIn(data);
     } catch (error) {
@@ -122,6 +126,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'No fue posible reenviar el código.');
       setFeedback(data.message, 'success');
+      const verificationUrl = new URL('register.html?verify=1', window.location.href);
+      verificationUrl.searchParams.set('email', email.value.trim());
+      if (params.get('redirect') === 'checkout') verificationUrl.searchParams.set('redirect', 'checkout');
+      window.location.href = verificationUrl.href;
     } catch (error) {
       setFeedback(error.message, 'error');
     } finally {
